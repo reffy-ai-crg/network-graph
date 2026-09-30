@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useNetwork } from "../context/NetworkContext";
-import { Users, Grid, Sparkles, BookOpen, User, Briefcase } from "lucide-react";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2 } from "lucide-react";
 
 interface HeaderProps {
   onOpenEditModal: () => void;
@@ -45,6 +45,18 @@ export function Header({ onOpenEditModal }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              const liffUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+              const text = encodeURIComponent(`邀請你加入「${currentEvent.title} · ${currentEvent.cohort}」人脈圖！點擊直接看全班同學名冊與動態關係圖譜：\n${liffUrl}`);
+              window.open(`https://line.me/R/share?text=${text}`, "_blank");
+            }}
+            className="hidden sm:flex text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-full transition items-center gap-1.5 shadow-sm font-medium"
+            title="分享此活動到 LINE 群組"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>分享到 LINE</span>
+          </button>
           <button
             onClick={() => openDrawer(currentUser)}
             className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-full transition flex items-center gap-1.5 shadow-sm font-medium"
