@@ -16,7 +16,7 @@ export default function Home() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <main className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* 頂部導航 */}
       <Header 
         onOpenEditModal={() => setIsEditModalOpen(true)}

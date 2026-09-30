@@ -26,6 +26,12 @@ interface NetworkContextType {
   toastMessage: string | null;
   showToast: (msg: string) => void;
   isCloudConnected: boolean;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+  isAdminUnlocked: boolean;
+  unlockAdmin: (pin: string) => boolean;
+  adminPin: string;
+  updateAdminPin: (newPin: string) => void;
 }
 
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
@@ -58,9 +64,28 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [privateNotes, setPrivateNotes] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [adminPin, setAdminPinState] = useState("888888");
 
   // 初始化資料與雲端 Supabase 連線
   useEffect(() => {
+    // 0. 主題與管理員授權載入
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("network_graph_theme") as "light" | "dark" | null;
+      const initialTheme = savedTheme || "light";
+      setTheme(initialTheme);
+      if (initialTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+
+      const savedPin = localStorage.getItem("network_graph_admin_pin");
+      if (savedPin) setAdminPinState(savedPin);
+      const sessionUnlocked = sessionStorage.getItem("network_graph_admin_unlocked");
+      if (sessionUnlocked === "true") setIsAdminUnlocked(true);
+    }
     // 1. 本地筆記快取載入
     if (typeof window !== "undefined") {
       const savedNotes = localStorage.getItem("network_graph_notes");
@@ -340,10 +365,49 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     showToast(`新活動房「${newEvent.title}」建立成功！`);
   };
 
-  // 切換示範模式 vs 純淨真實模式
+  // 切換示範名冊與真實名冊模式
   const toggleEventDemoMode = (eventId: string, isDemo: boolean) => {
     updateEventSettings(eventId, { isDemoMode: isDemo });
-    showToast(isDemo ? "已載入 52 位示範主管名冊" : "已切換為純淨真實模式（清空虛擬名單）");
+    showToast(isDemo ? "已切換為【52位示範人物展示模式】" : "已切換為【純淨真實學員模式】");
+  };
+
+  // 主題切換
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_theme", next);
+        if (next === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+      return next;
+    });
+  };
+
+  // 主辦人管理員密鑰解鎖
+  const unlockAdmin = (pin: string) => {
+    if (pin.trim() === adminPin) {
+      setIsAdminUnlocked(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("network_graph_admin_unlocked", "true");
+      }
+      showToast("主辦人密鑰驗證成功！已解鎖管理後台 ✓");
+      return true;
+    }
+    showToast("管理密鑰不正確，請重新確認！");
+    return false;
+  };
+
+  const updateAdminPin = (newPin: string) => {
+    if (!newPin.trim()) return;
+    setAdminPinState(newPin.trim());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("network_graph_admin_pin", newPin.trim());
+    }
+    showToast("主辦人管理密鑰已成功更新！");
   };
 
   return (
@@ -368,6 +432,12 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         toastMessage,
         showToast,
         isCloudConnected,
+        theme,
+        toggleTheme,
+        isAdminUnlocked,
+        unlockAdmin,
+        adminPin,
+        updateAdminPin,
       }}
     >
       {children}

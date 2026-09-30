@@ -33,7 +33,7 @@ const INDUSTRY_COLORS: Record<IndustryType, string> = {
 };
 
 export function GraphView() {
-  const { members, openDrawer, showToast } = useNetwork();
+  const { members, openDrawer, showToast, theme } = useNetwork();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [clusterMode, setClusterMode] = useState<"group" | "industry">("group");
@@ -149,6 +149,8 @@ export function GraphView() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const isLight = theme === "light";
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(transformRef.current.x, transformRef.current.y);
@@ -173,14 +175,14 @@ export function GraphView() {
 
         ctx.beginPath();
         ctx.arc(avgX, avgY, 68, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(30, 41, 59, 0.4)";
+        ctx.fillStyle = isLight ? "rgba(226, 232, 240, 0.7)" : "rgba(30, 41, 59, 0.4)";
         ctx.fill();
-        ctx.strokeStyle = "rgba(71, 85, 105, 0.25)";
+        ctx.strokeStyle = isLight ? "rgba(203, 213, 225, 0.8)" : "rgba(71, 85, 105, 0.25)";
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(148, 163, 184, 0.6)";
-        ctx.font = "10px sans-serif";
+        ctx.fillStyle = isLight ? "rgba(71, 85, 105, 0.85)" : "rgba(148, 163, 184, 0.6)";
+        ctx.font = "bold 10px sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(`第 ${g} 組`, avgX, avgY - 50);
       });
@@ -196,7 +198,7 @@ export function GraphView() {
           ctx.lineTo(matchedNodes[j].x, matchedNodes[j].y);
         }
       }
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.45)";
+      ctx.strokeStyle = isLight ? "rgba(217, 119, 6, 0.6)" : "rgba(245, 158, 11, 0.45)";
       ctx.lineWidth = 1.3;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
@@ -215,7 +217,7 @@ export function GraphView() {
       if (highlightedIndustry !== "all" && isMatch) {
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius + 6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
+        ctx.fillStyle = isLight ? "rgba(245, 158, 11, 0.2)" : "rgba(245, 158, 11, 0.25)";
         ctx.fill();
       }
 
@@ -228,7 +230,9 @@ export function GraphView() {
         ? node.groupColor
         : node.industryColor;
       ctx.fill();
-      ctx.strokeStyle = node === hoveredNodeRef.current ? "#ffffff" : "rgba(255, 255, 255, 0.35)";
+      ctx.strokeStyle = node === hoveredNodeRef.current 
+        ? (isLight ? "#0f172a" : "#ffffff") 
+        : (isLight ? "rgba(0, 0, 0, 0.15)" : "rgba(255, 255, 255, 0.35)");
       ctx.lineWidth = node === hoveredNodeRef.current ? 2.5 : 1.2;
       ctx.stroke();
 
@@ -241,8 +245,8 @@ export function GraphView() {
 
       // 下方姓名文字
       if (opacity > 0.5) {
-        ctx.fillStyle = "#cbd5e1";
-        ctx.font = "9px sans-serif";
+        ctx.fillStyle = isLight ? "#1e293b" : "#cbd5e1";
+        ctx.font = isLight ? "bold 9px sans-serif" : "9px sans-serif";
         ctx.fillText(node.member.name, node.x, node.y + node.radius + 11);
       }
 
@@ -250,7 +254,7 @@ export function GraphView() {
     });
 
     ctx.restore();
-  }, [clusterMode, highlightedIndustry]);
+  }, [clusterMode, highlightedIndustry, theme]);
 
   // 動畫循環
   useEffect(() => {
@@ -364,13 +368,13 @@ export function GraphView() {
   };
 
   return (
-    <div className="flex-1 relative w-full h-[calc(100vh-105px)] overflow-hidden bg-slate-950">
+    <div className="flex-1 relative w-full h-[calc(100vh-105px)] overflow-hidden bg-slate-100/90 dark:bg-slate-950 transition-colors">
       {/* 頂部操作控制列 */}
       <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* 聚類切換 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 px-2.5 shadow-lg backdrop-blur-md pointer-events-auto flex items-center gap-1.5 text-xs">
-          <Layers className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-400 hidden sm:inline">聚類維度：</span>
+        <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 px-2.5 shadow-sm dark:shadow-lg backdrop-blur-md pointer-events-auto flex items-center gap-1.5 text-xs transition-colors">
+          <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+          <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">聚類維度：</span>
           <button
             onClick={() => {
               setClusterMode("group");
@@ -379,7 +383,7 @@ export function GraphView() {
             className={`px-2.5 py-1 rounded-lg font-medium transition ${
               clusterMode === "group"
                 ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-slate-800 text-slate-300 hover:text-white"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
             }`}
           >
             依組別聚類
@@ -392,7 +396,7 @@ export function GraphView() {
             className={`px-2.5 py-1 rounded-lg font-medium transition ${
               clusterMode === "industry"
                 ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-slate-800 text-slate-300 hover:text-white"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
             }`}
           >
             依產業聚類
@@ -400,17 +404,17 @@ export function GraphView() {
         </div>
 
         {/* 產業標籤高亮 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 px-2.5 shadow-lg backdrop-blur-md pointer-events-auto flex items-center gap-1.5 overflow-x-auto max-w-full text-xs no-scrollbar">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="text-slate-400 whitespace-nowrap text-[11px] hidden sm:inline">
+        <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 px-2.5 shadow-sm dark:shadow-lg backdrop-blur-md pointer-events-auto flex items-center gap-1.5 overflow-x-auto max-w-full text-xs no-scrollbar transition-colors">
+          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] hidden sm:inline">
             產業高亮連線：
           </span>
           <button
             onClick={() => setHighlightedIndustry("all")}
             className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
               highlightedIndustry === "all"
-                ? "bg-slate-700 text-white ring-1 ring-white"
-                : "bg-slate-800 text-slate-400 hover:text-white"
+                ? "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-white ring-1 ring-slate-400 dark:ring-white"
+                : "bg-slate-100 text-slate-600 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-white"
             }`}
           >
             全部
@@ -424,8 +428,8 @@ export function GraphView() {
               }}
               className={`px-2 py-0.5 rounded text-[11px] transition whitespace-nowrap ${
                 highlightedIndustry === ind
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500 ring-1 ring-amber-400 font-semibold"
-                  : "bg-slate-800 text-slate-300 border border-slate-700/60 hover:text-white"
+                  ? "bg-amber-100 text-amber-900 border border-amber-400 ring-1 ring-amber-400 font-semibold dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500"
+                  : "bg-slate-100 text-slate-700 border border-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60 dark:hover:text-white"
               }`}
             >
               {ind}
@@ -438,21 +442,21 @@ export function GraphView() {
       <div className="absolute bottom-5 right-4 z-20 flex flex-col gap-1.5">
         <button
           onClick={resetView}
-          className="w-9 h-9 rounded-xl bg-slate-800/90 text-slate-300 border border-slate-700 hover:text-white flex items-center justify-center text-xs shadow-lg backdrop-blur-sm transition"
+          className="w-9 h-9 rounded-xl bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700 dark:hover:text-white flex items-center justify-center text-xs shadow-md backdrop-blur-sm transition"
           title="重置畫面"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
         <button
           onClick={() => zoom(1.2)}
-          className="w-9 h-9 rounded-xl bg-slate-800/90 text-slate-300 border border-slate-700 hover:text-white flex items-center justify-center text-sm shadow-lg backdrop-blur-sm transition"
+          className="w-9 h-9 rounded-xl bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700 dark:hover:text-white flex items-center justify-center text-sm shadow-md backdrop-blur-sm transition"
           title="放大"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
         <button
           onClick={() => zoom(0.8)}
-          className="w-9 h-9 rounded-xl bg-slate-800/90 text-slate-300 border border-slate-700 hover:text-white flex items-center justify-center text-sm shadow-lg backdrop-blur-sm transition"
+          className="w-9 h-9 rounded-xl bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700 dark:hover:text-white flex items-center justify-center text-sm shadow-md backdrop-blur-sm transition"
           title="縮小"
         >
           <ZoomOut className="w-4 h-4" />
@@ -460,7 +464,7 @@ export function GraphView() {
       </div>
 
       {/* 操作指引小浮水印 */}
-      <div className="absolute bottom-4 left-4 z-20 pointer-events-none text-[11px] text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800/80 backdrop-blur-sm">
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none text-[11px] text-slate-600 dark:text-slate-400 bg-white/90 dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800/80 shadow-xs backdrop-blur-sm transition-colors">
         💡 滑鼠/手指拖曳節點可互動 • 點擊同學頭像滑出詳細名片卡
       </div>
 

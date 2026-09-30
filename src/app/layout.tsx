@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-TW" className="dark">
-      <body className="bg-slate-950 text-slate-100 antialiased min-h-screen flex flex-col">
+    <html lang="zh-TW" suppressHydrationWarning>
+      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col">
         <NetworkProvider>
           {children}
         </NetworkProvider>

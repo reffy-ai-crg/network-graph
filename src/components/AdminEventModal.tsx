@@ -15,7 +15,9 @@ import {
   ShieldCheck, 
   Calendar, 
   Lock,
-  Layers
+  KeyRound,
+  Layers,
+  ShieldAlert
 } from "lucide-react";
 
 interface AdminEventModalProps {
@@ -31,11 +33,23 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
     createNewEvent, 
     toggleEventDemoMode, 
     members, 
-    showToast 
+    showToast,
+    isAdminUnlocked,
+    unlockAdmin,
+    adminPin,
+    updateAdminPin
   } = useNetwork();
 
-  const [activeTab, setActiveTab] = useState<"edit" | "create" | "share">("edit");
+  const [activeTab, setActiveTab] = useState<"edit" | "create" | "share" | "pin">("edit");
   const [copied, setCopied] = useState(false);
+
+  // 密鑰解鎖表單
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+
+  // 變更管理密碼表單
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
 
   // 編輯當前活動表單狀態
   const [title, setTitle] = useState(currentEvent.title);
@@ -62,6 +76,8 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       setDate(currentEvent.date || "2026/03");
       setPasscode(currentEvent.passcode || "");
       setIsDemo(currentEvent.isDemoMode ?? true);
+      setPinInput("");
+      setPinError(false);
     }
   }, [isOpen, currentEvent]);
 
@@ -69,6 +85,33 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
 
   const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
   const inviteUrl = `${liffBaseUrl}?event=${currentEvent.slug}`;
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = unlockAdmin(pinInput);
+    if (!success) {
+      setPinError(true);
+    } else {
+      setPinError(false);
+      setPinInput("");
+    }
+  };
+
+  const handleUpdatePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPin.trim() || newPin.length < 4) {
+      showToast("管理密鑰長度至少需 4 碼！");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      showToast("兩次輸入的密鑰不一致，請確認！");
+      return;
+    }
+    updateAdminPin(newPin);
+    setNewPin("");
+    setConfirmPin("");
+    setActiveTab("edit");
+  };
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,14 +134,14 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       return;
     }
 
-    const created = createNewEvent({
+    createNewEvent({
       title: newTitle.trim(),
       cohort: newCohort.trim() || "第一期",
       slug: newSlug.trim().toLowerCase(),
       totalGroups: Number(newGroups),
       date: new Date().toISOString().slice(0, 7).replace("-", "/"),
       passcode: newPasscode.trim(),
-      isDemoMode: false, // 新開活動預設為乾淨的真實空房
+      isDemoMode: false,
     });
 
     setNewTitle("");
@@ -116,327 +159,465 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
         {/* 頂部標題與關閉按鈕 */}
-        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-              <Settings className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+              {isAdminUnlocked ? <Settings className="w-4 h-4" /> : <Lock className="w-4 h-4 text-amber-500" />}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">活動主辦管理後台 (Admin Panel)</h3>
-              <p className="text-[11px] text-slate-400">自訂活動名稱、組別數量、模式切換與專屬邀請碼</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {isAdminUnlocked ? "活動主辦管理後台 (Admin Panel)" : "主辦人權限驗證"}
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isAdminUnlocked ? "自訂活動名稱、組別數量、模式切換與專屬邀請碼" : "請輸入主辦密碼以啟用活動設定與開房功能"}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg">
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 分頁切換 Tab */}
-        <div className="flex items-center border-b border-slate-800 bg-slate-950/60 px-4 text-xs font-medium">
-          <button
-            onClick={() => setActiveTab("edit")}
-            className={`py-3 px-3.5 border-b-2 transition flex items-center gap-1.5 ${
-              activeTab === "edit"
-                ? "border-emerald-500 text-emerald-400 font-semibold"
-                : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>目前活動設定</span>
-          </button>
+        {/* 尚未解鎖時：顯示主辦人密鑰驗證畫面 */}
+        {!isAdminUnlocked ? (
+          <div className="p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto shadow-inner">
+              <KeyRound className="w-7 h-7" />
+            </div>
 
-          <button
-            onClick={() => setActiveTab("create")}
-            className={`py-3 px-3.5 border-b-2 transition flex items-center gap-1.5 ${
-              activeTab === "create"
-                ? "border-emerald-500 text-emerald-400 font-semibold"
-                : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>開新活動房</span>
-          </button>
+            <div>
+              <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                🔒 主辦人專屬管理密鑰 (Master Passcode)
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                為防止一般參會學員誤改活動設定或隨意開房，主辦設定與開房權限受密鑰保護。
+              </p>
+            </div>
 
-          <button
-            onClick={() => setActiveTab("share")}
-            className={`py-3 px-3.5 border-b-2 transition flex items-center gap-1.5 ${
-              activeTab === "share"
-                ? "border-emerald-500 text-emerald-400 font-semibold"
-                : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>專屬邀請與連結</span>
-          </button>
-        </div>
-
-        {/* 內容區塊 */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
-          {/* TAB 1: 編輯當前活動 */}
-          {activeTab === "edit" && (
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              {/* 核心切換：展示模式 vs 真實學員模式 */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span className="font-semibold text-slate-200">名冊資料模式</span>
-                  </div>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                    isDemo ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                  }`}>
-                    {isDemo ? "52位示範人物 (Demo)" : "純淨真實模式 (Live)"}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {isDemo 
-                    ? "目前載入全班 52 位示範企業主管（台積電、微軟、金控等），適合用於對外演講展示效果。"
-                    : "目前已清空虛擬示範名單，僅保留真實掃碼加入的學員（適合正式場合使用）。"}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextMode = !isDemo;
-                    setIsDemo(nextMode);
-                    toggleEventDemoMode(currentEvent.id, nextMode);
-                  }}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 font-medium transition"
-                >
-                  {isDemo ? "👉 切換為【純淨真實模式】（清空虛擬名單）" : "👉 切換回【52人示範展示模式】"}
-                </button>
-              </div>
-
-              {/* 活動基本資料 */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">活動/課程全名</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1">梯次 / 期別標籤</label>
-                    <input
-                      type="text"
-                      value={cohort}
-                      onChange={(e) => setCohort(e.target.value)}
-                      placeholder="如: 經理人班第12期"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1">分組數量 (組別總數)</label>
-                    <select
-                      value={totalGroups}
-                      onChange={(e) => setTotalGroups(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 20].map((num) => (
-                        <option key={num} value={num}>
-                          {num} 個組別
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1">活動專屬代碼 (Slug)</label>
-                    <input
-                      type="text"
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="如: aia-12, aws-2026"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono text-[11px] focus:outline-none focus:border-emerald-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1">入房通行密碼 (選填)</label>
-                    <input
-                      type="text"
-                      value={passcode}
-                      onChange={(e) => setPasscode(e.target.value)}
-                      placeholder="留空表示免密碼"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition"
-                >
-                  儲存並更新雲端資料庫
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* TAB 2: 開新活動房 */}
-          {activeTab === "create" && (
-            <form onSubmit={handleCreateNew} className="space-y-3.5">
-              <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 text-emerald-300 text-[11px] flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
-                <span>建立新活動房後，系統會自動生成獨立的專屬連結與密碼，你可以將其作為讀書會、企業內訓或技術年會的人脈空間。</span>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">新活動名稱 *</label>
+            <form onSubmit={handleUnlock} className="space-y-3 max-w-xs mx-auto pt-2">
+              <div className="relative">
                 <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="例如：2026 台大 EMBA 科技創新論壇"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                  required
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value);
+                    setPinError(false);
+                  }}
+                  placeholder="輸入主辦密鑰 (預設: 888888)"
+                  className={`w-full bg-slate-50 dark:bg-slate-950 border ${
+                    pinError ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-300 dark:border-slate-800"
+                  } rounded-xl px-4 py-2.5 text-center text-sm font-mono tracking-widest text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition`}
+                  autoFocus
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">期別 / 梯次</label>
-                  <input
-                    type="text"
-                    value={newCohort}
-                    onChange={(e) => setNewCohort(e.target.value)}
-                    placeholder="如: 秋季班、台北場"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
+              {pinError && (
+                <p className="text-xs text-rose-500 flex items-center justify-center gap-1">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>密鑰不正確，請重新輸入！</span>
+                </p>
+              )}
 
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">預計分組數量</label>
-                  <select
-                    value={newGroups}
-                    onChange={(e) => setNewGroups(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20].map((num) => (
-                      <option key={num} value={num}>
-                        {num} 個組別
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">專屬英文代碼 (Slug) *</label>
-                  <input
-                    type="text"
-                    value={newSlug}
-                    onChange={(e) => setNewSlug(e.target.value)}
-                    placeholder="如: emba-2026, pycon"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono text-[11px] focus:outline-none focus:border-emerald-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">入房通行密碼 (選填)</label>
-                  <input
-                    type="text"
-                    value={newPasscode}
-                    onChange={(e) => setNewPasscode(e.target.value)}
-                    placeholder="留空表示免密碼"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition flex items-center justify-center gap-1.5"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>立即建立新活動房</span>
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>立即解鎖管理權限</span>
+              </button>
             </form>
-          )}
 
-          {/* TAB 3: 專屬邀請與連結 */}
-          {activeTab === "share" && (
-            <div className="space-y-4">
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
-                <div>
-                  <span className="text-slate-400 font-medium block mb-1">當前活動：</span>
-                  <span className="text-sm font-bold text-white">{currentEvent.title} · {currentEvent.cohort}</span>
-                </div>
+            <div className="pt-2 text-[11px] text-slate-400">
+              💡 預設主辦密鑰為 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">888888</span>，進入後可隨時更換。
+            </div>
+          </div>
+        ) : (
+          /* 已解鎖：顯示管理 Tabs 與內容 */
+          <>
+            {/* 分頁切換 Tab */}
+            <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 px-4 text-xs font-medium overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveTab("edit")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "edit"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>目前活動設定</span>
+              </button>
 
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">📲 官方 LINE 專屬邀請網址：</label>
-                  <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab("create")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "create"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>開新活動房</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("share")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "share"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>專屬邀請與連結</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("pin")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "pin"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>變更密鑰</span>
+              </button>
+            </div>
+
+            {/* 內容區塊 */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 text-slate-800 dark:text-slate-200">
+              {/* TAB 1: 編輯當前活動 */}
+              {activeTab === "edit" && (
+                <form onSubmit={handleSaveEdit} className="space-y-4">
+                  {/* 核心切換：展示模式 vs 真實學員模式 */}
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">名冊資料模式</span>
+                      </div>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                        isDemo 
+                          ? "bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30" 
+                          : "bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
+                      }`}>
+                        {isDemo ? "52位示範人物 (Demo)" : "純淨真實模式 (Live)"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {isDemo 
+                        ? "目前載入全班 52 位示範企業主管（台積電、微軟、金控等），適合用於對外演講展示效果。"
+                        : "目前已清空虛擬示範名單，僅保留真實掃碼加入的學員（適合正式場合使用）。"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextMode = !isDemo;
+                        setIsDemo(nextMode);
+                        toggleEventDemoMode(currentEvent.id, nextMode);
+                      }}
+                      className="w-full py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl border border-slate-300 dark:border-slate-700 font-medium transition"
+                    >
+                      {isDemo ? "👉 切換為【純淨真實模式】（清空虛擬名單）" : "👉 切換回【52人示範展示模式】"}
+                    </button>
+                  </div>
+
+                  {/* 活動基本資料 */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">活動/課程全名</label>
+                      <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">梯次 / 期別標籤</label>
+                        <input
+                          type="text"
+                          value={cohort}
+                          onChange={(e) => setCohort(e.target.value)}
+                          placeholder="如: 經理人班第12期"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">分組數量 (組別總數)</label>
+                        <select
+                          value={totalGroups}
+                          onChange={(e) => setTotalGroups(Number(e.target.value))}
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 20].map((num) => (
+                            <option key={num} value={num}>
+                              {num} 個組別
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">活動專屬代碼 (Slug)</label>
+                        <input
+                          type="text"
+                          value={slug}
+                          onChange={(e) => setSlug(e.target.value)}
+                          placeholder="如: aia-12, aws-2026"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-mono text-[11px] focus:outline-none focus:border-emerald-500 transition"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">入房通行密碼 (選填)</label>
+                        <input
+                          type="text"
+                          value={passcode}
+                          onChange={(e) => setPasscode(e.target.value)}
+                          placeholder="留空表示免密碼"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition"
+                    >
+                      取消
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition"
+                    >
+                      儲存活動設定
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* TAB 2: 開新活動房 */}
+              {activeTab === "create" && (
+                <form onSubmit={handleCreateNew} className="space-y-3.5">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl p-3.5 text-emerald-800 dark:text-emerald-300 text-[11px] flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>建立新活動房後，系統會自動生成獨立的專屬連結與密碼，你可以將其作為讀書會、企業內訓或技術年會的人脈空間。</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">新活動名稱 *</label>
                     <input
                       type="text"
-                      readOnly
-                      value={inviteUrl}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-[11px] font-mono text-emerald-400 focus:outline-none"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="例如：2026 台大 EMBA 科技創新論壇"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                      required
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">期別 / 梯次</label>
+                      <input
+                        type="text"
+                        value={newCohort}
+                        onChange={(e) => setNewCohort(e.target.value)}
+                        placeholder="如: 秋季班、台北場"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">預計分組數量</label>
+                      <select
+                        value={newGroups}
+                        onChange={(e) => setNewGroups(Number(e.target.value))}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20].map((num) => (
+                          <option key={num} value={num}>
+                            {num} 個組別
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">專屬英文代碼 (Slug) *</label>
+                      <input
+                        type="text"
+                        value={newSlug}
+                        onChange={(e) => setNewSlug(e.target.value)}
+                        placeholder="如: emba-2026, pycon"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-mono text-[11px] focus:outline-none focus:border-emerald-500 transition"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">入房通行密碼 (選填)</label>
+                      <input
+                        type="text"
+                        value={newPasscode}
+                        onChange={(e) => setNewPasscode(e.target.value)}
+                        placeholder="留空表示免密碼"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(inviteUrl);
-                        showToast("已複製專屬 LIFF 連結！");
-                      }}
-                      className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shrink-0 font-medium transition"
+                      type="submit"
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition flex items-center justify-center gap-1.5"
                     >
-                      複製
+                      <PlusCircle className="w-4 h-4" />
+                      <span>立即建立新活動房</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* TAB 3: 專屬邀請與連結 */}
+              {activeTab === "share" && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 font-medium block mb-1">當前活動：</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        {currentEvent.title} · {currentEvent.cohort}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">📲 官方 LINE 專屬邀請網址：</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={inviteUrl}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                        />
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(inviteUrl);
+                            showToast("已複製專屬 LIFF 連結！");
+                          }}
+                          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shrink-0 font-medium transition"
+                        >
+                          複製
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">🌐 一般電腦瀏覽器網址：</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`https://network-graph-reffy-ai-crg.vercel.app/?event=${currentEvent.slug}`}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-[11px] font-mono text-slate-700 dark:text-slate-300 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">💬 LINE 班級發布專用文案：</span>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                      {`各位同學好！為了方便散會後大家依然能保持聯繫、深入了解彼此在知名企業的背景與合作資源，我們啟用了專屬的「人脈關係圖」！\n點擊下方連結即可直接以 LINE 免密碼加入並建立名片：\n${inviteUrl}`}
+                    </p>
+                    <button
+                      onClick={copyInviteText}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold shadow-md transition flex items-center justify-center gap-1.5"
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      <span>{copied ? "已成功複製！" : "一鍵複製完整推薦文案"}</span>
                     </button>
                   </div>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">🌐 一般電腦瀏覽器網址：</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={`https://network-graph-jomubd79u-reffy-ai-crg.vercel.app/?event=${currentEvent.slug}`}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-[11px] font-mono text-slate-300 focus:outline-none"
-                  />
-                </div>
-              </div>
+              {/* TAB 4: 變更管理密鑰 */}
+              {activeTab === "pin" && (
+                <form onSubmit={handleUpdatePin} className="space-y-4">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        修改主辦人管理密鑰 (Master PIN)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      設定專屬的主辦密鑰後，只有持有此密碼的人員才能調整活動屬性或建立新的活動房間。
+                    </p>
+                  </div>
 
-              <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-                <span className="font-semibold text-slate-200 block">💬 LINE 班級發布專用文案：</span>
-                <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                  {`各位同學好！為了方便散會後大家依然能保持聯繫、深入了解彼此在知名企業的背景與合作資源，我們啟用了專屬的「人脈關係圖」！\n點擊下方連結即可直接以 LINE 免密碼加入並建立名片：\n${inviteUrl}`}
-                </p>
-                <button
-                  onClick={copyInviteText}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold shadow-md transition flex items-center justify-center gap-1.5"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  <span>{copied ? "已成功複製！" : "一鍵複製完整推薦文案"}</span>
-                </button>
-              </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+                        輸入新密鑰 (至少 4 碼)
+                      </label>
+                      <input
+                        type="password"
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value)}
+                        placeholder="請輸入新密碼"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-mono tracking-wider focus:outline-none focus:border-emerald-500 transition"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+                        再次確認新密鑰
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPin}
+                        onChange={(e) => setConfirmPin(e.target.value)}
+                        placeholder="請再次輸入新密碼"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-mono tracking-wider focus:outline-none focus:border-emerald-500 transition"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>確認更新主辦密鑰</span>
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
