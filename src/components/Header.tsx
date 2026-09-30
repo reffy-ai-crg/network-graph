@@ -1,0 +1,112 @@
+"use client";
+
+import React from "react";
+import { useNetwork } from "../context/NetworkContext";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase } from "lucide-react";
+
+interface HeaderProps {
+  onOpenEditModal: () => void;
+}
+
+export function Header({ onOpenEditModal }: HeaderProps) {
+  const { currentEvent, activeTab, setActiveTab, currentUser, openDrawer, isCloudConnected } = useNetwork();
+
+  return (
+    <header className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
+      {/* 頂部品牌與活動資訊列 */}
+      <div className="px-4 py-2.5 flex items-center justify-between border-b border-slate-800/60">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-xs tracking-wider shadow-sm">
+            LINE
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-sm font-semibold tracking-wide text-white">
+                {currentEvent.title}
+              </h1>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-medium">
+                {currentEvent.cohort}
+              </span>
+              {isCloudConnected && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-medium flex items-center gap-1 border border-sky-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                  <span>雲端已連線</span>
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+              <span>👥 全班 {currentEvent.totalMembers} 位</span>
+              <span>•</span>
+              <span>🧩 {currentEvent.totalGroups} 個組別</span>
+              <span>•</span>
+              <span className="hidden sm:inline">🏢 5 大產業</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => openDrawer(currentUser)}
+            className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-full transition flex items-center gap-1.5 shadow-sm font-medium"
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>我的名片</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("hub")}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            title="個人人脈存摺"
+          >
+            <Briefcase className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 視圖切換導覽列 */}
+      <div className="px-3 py-1.5 flex items-center justify-between gap-2 bg-slate-900/60">
+        <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+          <button
+            onClick={() => setActiveTab("directory")}
+            className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
+              activeTab === "directory"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <Grid className="w-3.5 h-3.5" />
+            <span>目錄清單</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("graph")}
+            className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
+              activeTab === "graph"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>動態圖譜</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("hub")}
+            className={`px-3 py-1 rounded-md transition font-medium flex items-center gap-1.5 ${
+              activeTab === "hub"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>人脈存摺</span>
+          </button>
+        </div>
+
+        <div className="text-[11px] text-slate-400 hidden md:flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping"></span>
+          <span>點選同學名片可直接一鍵加 LINE / 瀏覽 LinkedIn / 寫私密備忘</span>
+        </div>
+      </div>
+    </header>
+  );
+}
