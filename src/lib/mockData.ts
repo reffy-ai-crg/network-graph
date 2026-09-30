@@ -54,6 +54,46 @@ export const INITIAL_EVENTS: EventSpace[] = [
   }
 ];
 
+export const SAMPLE_CARD_TSMC = "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="350" viewBox="0 0 600 350">
+  <defs>
+    <linearGradient id="tsmcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="350" rx="16" fill="url(#tsmcGrad)" stroke="#10b981" stroke-width="3"/>
+  <rect x="35" y="32" width="6" height="42" fill="#f59e0b" rx="2"/>
+  <text x="50" y="58" font-family="sans-serif" font-size="22" font-weight="bold" fill="#ffffff">TSMC 台灣積體電路製造</text>
+  <text x="50" y="82" font-family="sans-serif" font-size="12" fill="#94a3b8">Taiwan Semiconductor Manufacturing Co., Ltd.</text>
+  <line x1="35" y1="105" x2="565" y2="105" stroke="#334155" stroke-width="1.5"/>
+  <text x="45" y="155" font-family="sans-serif" font-size="30" font-weight="bold" fill="#ffffff">林家豪 (Jason Lin)</text>
+  <text x="45" y="190" font-family="sans-serif" font-size="16" font-weight="bold" fill="#38bdf8">先進製程良率工程處 • 資深技術總監</text>
+  <text x="45" y="235" font-family="sans-serif" font-size="13" fill="#cbd5e1">📍 新竹科學園區力行六路8號</text>
+  <text x="45" y="262" font-family="sans-serif" font-size="13" fill="#cbd5e1">📧 jason.lin@tsmc.com  |  📱 +886 912-345-678</text>
+  <rect x="45" y="285" width="140" height="26" rx="6" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-width="1"/>
+  <text x="60" y="303" font-family="sans-serif" font-size="12" font-weight="bold" fill="#34d399">💬 LINE: jason_tsmc</text>
+</svg>
+`);
+
+export const SAMPLE_CARD_MSFT = "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="350" viewBox="0 0 600 350">
+  <rect width="600" height="350" rx="16" fill="#ffffff" stroke="#0284c7" stroke-width="3"/>
+  <rect x="40" y="38" width="16" height="16" fill="#f25022"/>
+  <rect x="60" y="38" width="16" height="16" fill="#7fba00"/>
+  <rect x="40" y="58" width="16" height="16" fill="#00a4ef"/>
+  <rect x="60" y="58" width="16" height="16" fill="#ffb900"/>
+  <text x="90" y="60" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0f172a">Microsoft 台灣微軟</text>
+  <line x1="40" y1="95" x2="560" y2="95" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="45" y="150" font-family="sans-serif" font-size="30" font-weight="bold" fill="#0f172a">黃怡君 (Emily Huang)</text>
+  <text x="45" y="185" font-family="sans-serif" font-size="16" font-weight="bold" fill="#0284c7">雲端與 AI 解決方案架構事業部 • 副總經理</text>
+  <text x="45" y="235" font-family="sans-serif" font-size="13" fill="#64748b">📍 台北市信義區忠孝東路五段68號18樓</text>
+  <text x="45" y="262" font-family="sans-serif" font-size="13" fill="#64748b">📧 emily.huang@microsoft.com  |  📱 +886 928-888-999</text>
+  <rect x="45" y="285" width="150" height="26" rx="6" fill="#0284c7" fill-opacity="0.1" stroke="#0284c7" stroke-width="1"/>
+  <text x="60" y="303" font-family="sans-serif" font-size="12" font-weight="bold" fill="#0284c7">💬 LINE: emily_msft</text>
+</svg>
+`);
+
 export const CURRENT_USER_DEFAULT: UserProfile = {
   id: "user-kevin",
   name: "陳志豪 (Kevin)",
@@ -63,6 +103,8 @@ export const CURRENT_USER_DEFAULT: UserProfile = {
   industry: "半導體與硬體",
   group: 3,
   role: "學員",
+  businessCardUrl: SAMPLE_CARD_TSMC,
+  mediaType: "card",
   lineId: "kevin_ai_99",
   linkedinUrl: "https://linkedin.com/in/kevin-chen-ai",
   offer: "先進製程缺陷 AI 影像辨識、智慧製造落地經驗",
@@ -154,6 +196,8 @@ export function generateMockMembers(currentUser: UserProfile): UserProfile[] {
       linkedinUrl: `https://linkedin.com/in/user-${i}`,
       offer: offerList[i % offerList.length],
       seek: seekList[i % seekList.length],
+      businessCardUrl: i % 4 === 0 ? SAMPLE_CARD_TSMC : i % 5 === 0 ? SAMPLE_CARD_MSFT : undefined,
+      mediaType: (i % 4 === 0 || i % 5 === 0) ? "card" : "avatar",
       isCurrentUser: false
     });
   }

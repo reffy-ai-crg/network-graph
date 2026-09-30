@@ -22,9 +22,13 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-md shrink-0">
-              <div className="w-full h-full bg-slate-50 dark:bg-slate-950 rounded-[14px] flex items-center justify-center text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                {currentUser.surname}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-md shrink-0 overflow-hidden">
+              <div className="w-full h-full bg-slate-50 dark:bg-slate-950 rounded-[14px] flex items-center justify-center text-2xl font-bold text-emerald-600 dark:text-emerald-400 overflow-hidden">
+                {currentUser.avatarUrl ? (
+                  <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                ) : (
+                  currentUser.surname
+                )}
               </div>
             </div>
             <div>

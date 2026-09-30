@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
-import { Search, X, MessageSquare, ExternalLink, StickyNote, Award } from "lucide-react";
+import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard } from "lucide-react";
 
 export function DirectoryView() {
   const { members, openDrawer, privateNotes, showToast } = useNetwork();
@@ -142,8 +142,12 @@ export function DirectoryView() {
                   {/* 頂部姓名與所屬企業 */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-base text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition shadow-inner">
-                        {member.surname}
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-base text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition shadow-inner overflow-hidden">
+                        {member.avatarUrl ? (
+                          <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          member.surname
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
@@ -173,6 +177,12 @@ export function DirectoryView() {
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-medium">
                         第 {member.group} 組
                       </span>
+                      {member.businessCardUrl && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5 font-medium">
+                          <CreditCard className="w-2.5 h-2.5" />
+                          <span>含名片</span>
+                        </span>
+                      )}
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                         {member.industry}
                       </span>

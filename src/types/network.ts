@@ -31,6 +31,8 @@ export interface UserProfile {
   group: number;
   role: "組長" | "學員" | "講師" | "助教";
   avatarUrl?: string;
+  businessCardUrl?: string;
+  mediaType?: "avatar" | "card";
   lineId: string;
   linkedinUrl: string;
   offer: string;
