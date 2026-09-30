@@ -11,6 +11,7 @@ export const INDUSTRIES: IndustryType[] = [
 export const INITIAL_EVENTS: EventSpace[] = [
   {
     id: "aia-12",
+    slug: "aia-12",
     title: "台灣人工智慧學校 (AIA)",
     cohort: "經理人班第12期",
     date: "2026/03",
@@ -18,9 +19,11 @@ export const INITIAL_EVENTS: EventSpace[] = [
     totalGroups: 8,
     userRole: "第 3 組 學員",
     isCurrent: true,
+    isDemoMode: true,
   },
   {
     id: "genai-workshop",
+    slug: "genai-workshop",
     title: "企業生成式 AI 落地工作坊",
     cohort: "春季實戰營",
     date: "2026/01",
@@ -28,9 +31,11 @@ export const INITIAL_EVENTS: EventSpace[] = [
     totalGroups: 6,
     userRole: "自由分組",
     isCurrent: false,
+    isDemoMode: false,
   },
   {
     id: "aws-summit",
+    slug: "aws-summit",
     title: "AWS Cloud Summit 企業閉門會",
     cohort: "架構師論壇",
     date: "2025/11",
@@ -38,6 +43,7 @@ export const INITIAL_EVENTS: EventSpace[] = [
     totalGroups: 10,
     userRole: "VIP 嘉賓",
     isCurrent: false,
+    isDemoMode: false,
   }
 ];
 

@@ -8,15 +8,20 @@ import { GraphView } from "../components/GraphView";
 import { MyHubView } from "../components/MyHubView";
 import { ProfileDrawer } from "../components/ProfileDrawer";
 import { EditProfileModal } from "../components/EditProfileModal";
+import { AdminEventModal } from "../components/AdminEventModal";
 
 export default function Home() {
   const { activeTab } = useNetwork();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
       {/* 頂部導航 */}
-      <Header onOpenEditModal={() => setIsEditModalOpen(true)} />
+      <Header 
+        onOpenEditModal={() => setIsEditModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
+      />
 
       {/* 核心視圖切換 */}
       <div className="flex-1 flex flex-col">
@@ -34,6 +39,12 @@ export default function Home() {
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+      />
+
+      {/* 活動主辦管理後台 (Admin Panel) */}
+      <AdminEventModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
       />
     </main>
   );

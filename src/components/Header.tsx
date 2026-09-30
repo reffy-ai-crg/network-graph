@@ -2,13 +2,14 @@
 
 import React from "react";
 import { useNetwork } from "../context/NetworkContext";
-import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2 } from "lucide-react";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings } from "lucide-react";
 
 interface HeaderProps {
   onOpenEditModal: () => void;
+  onOpenAdminModal: () => void;
 }
 
-export function Header({ onOpenEditModal }: HeaderProps) {
+export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
   const { currentEvent, activeTab, setActiveTab, currentUser, openDrawer, isCloudConnected } = useNetwork();
 
   return (
@@ -70,6 +71,13 @@ export function Header({ onOpenEditModal }: HeaderProps) {
             title="個人人脈存摺"
           >
             <Briefcase className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onOpenAdminModal}
+            className="p-1.5 text-emerald-400 hover:text-emerald-300 rounded-lg hover:bg-slate-800 transition"
+            title="活動主辦管理後台"
+          >
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </div>

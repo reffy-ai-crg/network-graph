@@ -20,6 +20,9 @@ interface NetworkContextType {
   saveNote: (targetUserId: string, content: string) => void;
   updateCurrentUserProfile: (profile: Partial<UserProfile>) => void;
   switchEvent: (eventId: string) => void;
+  updateEventSettings: (eventId: string, updates: Partial<EventSpace>) => void;
+  createNewEvent: (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => void;
+  toggleEventDemoMode: (eventId: string, isDemo: boolean) => void;
   toastMessage: string | null;
   showToast: (msg: string) => void;
   isCloudConnected: boolean;
@@ -38,7 +41,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     return CURRENT_USER_DEFAULT;
   });
 
-  const [events, setEvents] = useState<EventSpace[]>(INITIAL_EVENTS);
+  const [events, setEvents] = useState<EventSpace[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("network_graph_events");
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      }
+    }
+    return INITIAL_EVENTS;
+  });
+
   const [currentEvent, setCurrentEvent] = useState<EventSpace>(INITIAL_EVENTS[0]);
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<ViewTab>("directory");
@@ -55,39 +67,56 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       if (savedNotes) {
         try { setPrivateNotes(JSON.parse(savedNotes)); } catch (e) { console.error(e); }
       }
+
+      // 檢查網址參數 ?event=slug
+      const params = new URLSearchParams(window.location.search);
+      const eventSlug = params.get("event");
+      if (eventSlug) {
+        const found = events.find((e) => e.slug === eventSlug);
+        if (found) {
+          setCurrentEvent(found);
+        }
+      }
     }
 
-    // 2. 預設預載 Mock 名單
-    const mockList = generateMockMembers(currentUser);
-    setMembers(mockList);
+    // 2. 依照當前活動模式預載名冊
+    if (currentEvent.isDemoMode !== false) {
+      setMembers(generateMockMembers(currentUser));
+    } else {
+      setMembers([{ ...currentUser }]);
+    }
 
     // 3. 嘗試連線雲端 Supabase
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       const syncCloud = async () => {
         try {
-          // 查詢雲端活動清單
           const { data: cloudEvents, error: eventErr } = await client
             .from("events")
             .select("*");
 
           if (!eventErr && cloudEvents && cloudEvents.length > 0) {
             setIsCloudConnected(true);
-            setEvents(
-              cloudEvents.map((e) => ({
-                id: e.id,
-                title: e.name,
-                cohort: e.cohort,
-                date: e.event_date || "2026/03",
-                totalMembers: 52,
-                totalGroups: e.total_groups || 8,
-                userRole: "學員",
-                isCurrent: e.slug === "aia-12",
-              }))
-            );
+            const mappedEvents: EventSpace[] = cloudEvents.map((e) => ({
+              id: e.id,
+              slug: e.slug,
+              title: e.name,
+              cohort: e.cohort,
+              date: e.event_date || "2026/03",
+              totalMembers: 52,
+              totalGroups: e.total_groups || 8,
+              userRole: "學員",
+              isCurrent: e.slug === (currentEvent.slug || "aia-12"),
+              passcode: e.passcode,
+              isDemoMode: true,
+            }));
+
+            setEvents(mappedEvents);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("network_graph_events", JSON.stringify(mappedEvents));
+            }
           }
 
-          // 查詢雲端私密筆記
           const { data: cloudNotes, error: noteErr } = await client
             .from("private_notes")
             .select("*");
@@ -143,7 +172,6 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     setSelectedMember(null);
   };
 
-  // 儲存私密筆記（同時存本地與雲端）
   const saveNote = (targetUserId: string, content: string) => {
     setPrivateNotes((prev) => {
       const next = { ...prev };
@@ -158,7 +186,6 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
 
-    // 異步同步至 Supabase
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       if (content.trim()) {
@@ -166,7 +193,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
           .from("private_notes")
           .upsert(
             {
-              author_id: "00000000-0000-0000-0000-000000000001", // 訪客/模擬登入預設 ID
+              author_id: "00000000-0000-0000-0000-000000000001",
               target_user_id: targetUserId,
               note_content: content.trim(),
               updated_at: new Date().toISOString(),
@@ -180,7 +207,6 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 全局即時同步修改（更新本地、畫面，並非同步推送雲端）
   const updateCurrentUserProfile = (updates: Partial<UserProfile>) => {
     setCurrentUser((prev) => {
       const updated = { ...prev, ...updates };
@@ -193,7 +219,6 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
 
-    // 異步同步至 Supabase
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       client
@@ -222,9 +247,103 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         prev.map((e) => ({ ...e, isCurrent: e.id === eventId }))
       );
       setCurrentEvent(found);
+      if (found.isDemoMode !== false) {
+        setMembers(generateMockMembers(currentUser));
+      } else {
+        setMembers([{ ...currentUser }]);
+      }
       setActiveTab("directory");
       showToast(`已切換至「${found.title}」人脈名冊`);
     }
+  };
+
+  // 修改活動設定 (Admin)
+  const updateEventSettings = (eventId: string, updates: Partial<EventSpace>) => {
+    setEvents((prev) => {
+      const updated = prev.map((e) => (e.id === eventId ? { ...e, ...updates } : e));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_events", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    setCurrentEvent((prev) => ({ ...prev, ...updates }));
+
+    if (updates.isDemoMode !== undefined) {
+      if (updates.isDemoMode) {
+        setMembers(generateMockMembers(currentUser));
+      } else {
+        setMembers([{ ...currentUser }]);
+      }
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const client = supabase;
+      client
+        .from("events")
+        .update({
+          name: updates.title,
+          cohort: updates.cohort,
+          slug: updates.slug,
+          total_groups: updates.totalGroups,
+          passcode: updates.passcode,
+        })
+        .eq("id", eventId)
+        .then(({ error }) => {
+          if (error) console.warn("Supabase update event notice:", error.message);
+        });
+    }
+
+    showToast("活動設定已成功更新並同步至雲端資料庫 ✓");
+  };
+
+  // 建立全新活動房 (Admin)
+  const createNewEvent = (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => {
+    const eventId = `event-${Date.now()}`;
+    const fullEvent: EventSpace = {
+      ...newEvent,
+      id: eventId,
+      totalMembers: 1,
+      userRole: "發起人 / 主辦",
+      isCurrent: true,
+      isDemoMode: false,
+    };
+
+    setEvents((prev) => {
+      const updated = [fullEvent, ...prev.map((e) => ({ ...e, isCurrent: false }))];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_events", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    setCurrentEvent(fullEvent);
+    setMembers([{ ...currentUser }]);
+    setActiveTab("directory");
+
+    if (isSupabaseConfigured && supabase) {
+      const client = supabase;
+      client
+        .from("events")
+        .insert({
+          slug: newEvent.slug,
+          name: newEvent.title,
+          cohort: newEvent.cohort,
+          total_groups: newEvent.totalGroups,
+          passcode: newEvent.passcode,
+        })
+        .then(({ error }) => {
+          if (error) console.warn("Supabase insert event notice:", error.message);
+        });
+    }
+
+    showToast(`新活動房「${newEvent.title}」建立成功！`);
+  };
+
+  // 切換示範模式 vs 純淨真實模式
+  const toggleEventDemoMode = (eventId: string, isDemo: boolean) => {
+    updateEventSettings(eventId, { isDemoMode: isDemo });
+    showToast(isDemo ? "已載入 52 位示範主管名冊" : "已切換為純淨真實模式（清空虛擬名單）");
   };
 
   return (
@@ -243,6 +362,9 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         saveNote,
         updateCurrentUserProfile,
         switchEvent,
+        updateEventSettings,
+        createNewEvent,
+        toggleEventDemoMode,
         toastMessage,
         showToast,
         isCloudConnected,

@@ -25,6 +25,7 @@ export interface UserProfile {
 
 export interface EventSpace {
   id: string;
+  slug: string;
   title: string;
   cohort: string;
   date: string;
@@ -32,6 +33,8 @@ export interface EventSpace {
   totalGroups: number;
   userRole: string;
   isCurrent: boolean;
+  passcode?: string;
+  isDemoMode?: boolean;
 }
 
 export interface PrivateNote {
