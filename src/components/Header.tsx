@@ -15,11 +15,17 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
     activeTab, 
     setActiveTab, 
     currentUser, 
+    members,
     openDrawer, 
     isCloudConnected,
     theme,
     toggleTheme 
   } = useNetwork();
+
+  const industryCount = React.useMemo(() => {
+    const set = new Set(members.map((m) => m.industry));
+    return Math.max(set.size, 1);
+  }, [members]);
 
   return (
     <header className="bg-white/95 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 backdrop-blur-md transition-colors">
@@ -49,7 +55,7 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
               <span>•</span>
               <span>🧩 {currentEvent.totalGroups} 個組別</span>
               <span>•</span>
-              <span className="hidden sm:inline">🏢 5 大產業</span>
+              <span className="hidden sm:inline">🏢 {industryCount} 大產業</span>
             </p>
           </div>
         </div>
