@@ -14,6 +14,16 @@ export function DirectoryView() {
 
   const groups = useMemo(() => ["全部", "第 1 組", "第 2 組", "第 3 組", "第 4 組", "第 5 組", "第 6 組", "第 7 組", "第 8 組"], []);
 
+  const allIndustries = useMemo(() => {
+    const customSet = new Set<string>();
+    members.forEach((m) => {
+      if (m.industry && !INDUSTRIES.includes(m.industry)) {
+        customSet.add(m.industry);
+      }
+    });
+    return [...INDUSTRIES, ...Array.from(customSet)];
+  }, [members]);
+
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
       const matchInd = selectedIndustry === "全部" || m.industry === selectedIndustry;
@@ -74,7 +84,7 @@ export function DirectoryView() {
             </span>
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {["全部", ...INDUSTRIES].map((ind) => (
+            {["全部", ...allIndustries].map((ind) => (
               <button
                 key={ind}
                 onClick={() => setSelectedIndustry(ind)}

@@ -17,7 +17,9 @@ export type IndustryType =
   | "金融科技"
   | "生技醫療"
   | "智慧製造"
-  | "其他領域";
+  | "其他領域"
+  // 支援學員自行輸入自訂產業領域
+  | (string & {});
 
 export interface UserProfile {
   id: string;

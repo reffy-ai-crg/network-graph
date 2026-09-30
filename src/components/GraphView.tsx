@@ -45,12 +45,32 @@ const INDUSTRY_COLORS: Record<IndustryType, string> = {
   "其他領域": "#64748b"
 };
 
+function getIndustryColor(ind: string): string {
+  if (INDUSTRY_COLORS[ind as IndustryType]) return INDUSTRY_COLORS[ind as IndustryType];
+  let hash = 0;
+  for (let i = 0; i < ind.length; i++) {
+    hash = ind.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const customPalette = ["#06b6d4", "#ec4899", "#8b5cf6", "#f59e0b", "#10b981", "#3b82f6", "#f97316", "#14b8a6", "#e11d48", "#a855f7"];
+  return customPalette[Math.abs(hash) % customPalette.length];
+}
+
 export function GraphView() {
   const { members, openDrawer, showToast, theme } = useNetwork();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [clusterMode, setClusterMode] = useState<"group" | "industry">("group");
   const [highlightedIndustry, setHighlightedIndustry] = useState<string>("all");
+
+  const allIndustries = React.useMemo(() => {
+    const customSet = new Set<string>();
+    members.forEach((m) => {
+      if (m.industry && !INDUSTRIES.includes(m.industry)) {
+        customSet.add(m.industry);
+      }
+    });
+    return [...INDUSTRIES, ...Array.from(customSet)];
+  }, [members]);
 
   const nodesRef = useRef<GraphNode[]>([]);
   const transformRef = useRef({ x: 0, y: 0, k: 1 });
@@ -84,7 +104,7 @@ export function GraphView() {
         vy: 0,
         radius: m.isCurrentUser ? 18 : 14,
         groupColor: GROUP_COLORS[(m.group - 1) % GROUP_COLORS.length],
-        industryColor: INDUSTRY_COLORS[m.industry] || "#94a3b8",
+        industryColor: getIndustryColor(m.industry),
       };
     });
   }, [members]);
@@ -108,8 +128,8 @@ export function GraphView() {
 
     // 產業中心聚類點
     const indCenters: Record<string, { x: number; y: number }> = {};
-    INDUSTRIES.forEach((ind, i) => {
-      const ang = (i / INDUSTRIES.length) * Math.PI * 2;
+    allIndustries.forEach((ind, i) => {
+      const ang = (i / allIndustries.length) * Math.PI * 2;
       const rad = Math.min(w, h) * 0.28;
       indCenters[ind] = { x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad };
     });
@@ -153,7 +173,7 @@ export function GraphView() {
       node.x += node.vx;
       node.y += node.vy;
     }
-  }, [clusterMode]);
+  }, [clusterMode, allIndustries]);
 
   // 繪製畫布
   const draw = useCallback(() => {
@@ -432,7 +452,7 @@ export function GraphView() {
           >
             全部
           </button>
-          {INDUSTRIES.map((ind) => (
+          {allIndustries.map((ind) => (
             <button
               key={ind}
               onClick={() => {

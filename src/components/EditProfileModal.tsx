@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType } from "../types/network";
-import { X, CheckCircle2 } from "lucide-react";
+import { X, CheckCircle2, Sparkles, PenLine } from "lucide-react";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -17,20 +17,51 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const [name, setName] = useState(currentUser.name);
   const [company, setCompany] = useState(currentUser.company);
   const [title, setTitle] = useState(currentUser.title);
-  const [industry, setIndustry] = useState<IndustryType>(currentUser.industry);
+  
+  // 產業選單：選擇的標準類別或「其他多元領域」
+  const [selectedCategory, setSelectedCategory] = useState<string>("其他多元領域");
+  // 若為「其他多元領域」，學員自行輸入的具體產業名稱
+  const [customIndustry, setCustomIndustry] = useState<string>("");
+
   const [offer, setOffer] = useState(currentUser.offer);
   const [seek, setSeek] = useState(currentUser.seek);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(currentUser.name);
+      setCompany(currentUser.company);
+      setTitle(currentUser.title);
+      setOffer(currentUser.offer);
+      setSeek(currentUser.seek);
+
+      const isStandard = INDUSTRIES.includes(currentUser.industry) && currentUser.industry !== "其他多元領域";
+      if (isStandard) {
+        setSelectedCategory(currentUser.industry);
+        setCustomIndustry("");
+      } else {
+        setSelectedCategory("其他多元領域");
+        setCustomIndustry(currentUser.industry === "其他多元領域" ? "" : currentUser.industry);
+      }
+    }
+  }, [isOpen, currentUser]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 計算最終產業字串：若是「其他多元領域」，優先取學員自行輸入的文字
+    const finalIndustry = 
+      selectedCategory === "其他多元領域"
+        ? (customIndustry.trim() || "其他多元領域")
+        : selectedCategory;
+
     updateCurrentUserProfile({
       name: name.trim() || currentUser.name,
       surname: name.trim().slice(0, 1) || currentUser.surname,
       company: company.trim() || currentUser.company,
       title: title.trim() || currentUser.title,
-      industry,
+      industry: finalIndustry,
       offer: offer.trim() || currentUser.offer,
       seek: seek.trim() || currentUser.seek,
     });
@@ -39,7 +70,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-5 sm:p-6 space-y-4 shadow-2xl transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-5 sm:p-6 space-y-4 shadow-2xl transition-colors max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">✏️ 更新個人主名片</h3>
@@ -91,11 +122,14 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">產業類別</label>
+          {/* 產業類別選單 + 自行輸入欄位 */}
+          <div className="space-y-2">
+            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+              產業類別
+            </label>
             <select
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value as IndustryType)}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
             >
               {INDUSTRIES.map((ind) => (
@@ -104,6 +138,27 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 </option>
               ))}
             </select>
+
+            {/* 當選擇「其他多元領域」時，顯示自行輸入框 */}
+            {selectedCategory === "其他多元領域" && (
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-500/40 rounded-xl space-y-1.5 transition-all">
+                <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium text-[11px]">
+                  <PenLine className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>自行輸入您的具體產業或專業領域：</span>
+                </div>
+                <input
+                  type="text"
+                  value={customIndustry}
+                  onChange={(e) => setCustomIndustry(e.target.value)}
+                  placeholder="例如：影視動漫、智慧農業、文化創意、無人機科技、航太..."
+                  className="w-full bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-600/50 rounded-lg p-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                  autoFocus
+                />
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  💡 儲存後，此自訂產業將自動出現在全班目錄篩選器與動態圖譜聚類中！
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
