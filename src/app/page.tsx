@@ -28,7 +28,10 @@ export default function Home() {
         {activeTab === "directory" && <DirectoryView />}
         {activeTab === "graph" && <GraphView />}
         {activeTab === "hub" && (
-          <MyHubView onOpenEditModal={() => setIsEditModalOpen(true)} />
+          <MyHubView 
+            onOpenEditModal={() => setIsEditModalOpen(true)}
+            onOpenAdminModal={() => setIsAdminModalOpen(true)}
+          />
         )}
       </div>
 

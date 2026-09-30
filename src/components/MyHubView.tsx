@@ -6,9 +6,10 @@ import { User, Edit3, ArrowRight, PlusCircle, CheckCircle2, StickyNote, Users } 
 
 interface MyHubViewProps {
   onOpenEditModal: () => void;
+  onOpenAdminModal: () => void;
 }
 
-export function MyHubView({ onOpenEditModal }: MyHubViewProps) {
+export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps) {
   const { currentUser, events, currentEvent, switchEvent, privateNotes, showToast } = useNetwork();
 
   const totalNotesCount = Object.keys(privateNotes).length;
@@ -79,7 +80,7 @@ export function MyHubView({ onOpenEditModal }: MyHubViewProps) {
             <span>我的活動人脈庫 (歷次認識時空情境)</span>
           </h3>
           <button
-            onClick={() => showToast("已開啟新活動房建立精靈！支援一鍵產生專屬邀請海報與 QR Code")}
+            onClick={onOpenAdminModal}
             className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1"
           >
             <PlusCircle className="w-3.5 h-3.5" />

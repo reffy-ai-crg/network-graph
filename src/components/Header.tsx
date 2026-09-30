@@ -74,10 +74,11 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
           </button>
           <button
             onClick={onOpenAdminModal}
-            className="p-1.5 text-emerald-400 hover:text-emerald-300 rounded-lg hover:bg-slate-800 transition"
+            className="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded-full transition flex items-center gap-1 shadow-sm font-medium"
             title="活動主辦管理後台"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5 text-amber-400" />
+            <span>活動後台</span>
           </button>
         </div>
       </div>
