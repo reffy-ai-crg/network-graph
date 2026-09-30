@@ -36,7 +36,7 @@ export default function Home() {
       </div>
 
       {/* 詳細名片抽屜 (Bottom Sheet) */}
-      <ProfileDrawer />
+      <ProfileDrawer onOpenEditModal={() => setIsEditModalOpen(true)} />
 
       {/* 編輯個人名片彈窗 */}
       <EditProfileModal
