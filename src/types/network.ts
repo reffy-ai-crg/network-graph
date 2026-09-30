@@ -29,7 +29,7 @@ export interface UserProfile {
   title: string;
   industry: IndustryType;
   group: number;
-  role: "組長" | "學員" | "講師" | "助教";
+  role: "組長" | "副組長" | "學員" | "講師" | "助教" | "活動籌備" | "貴賓" | (string & {});
   avatarUrl?: string;
   businessCardUrl?: string;
   mediaType?: "avatar" | "card";

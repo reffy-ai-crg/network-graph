@@ -23,8 +23,8 @@ export const INITIAL_EVENTS: EventSpace[] = [
     cohort: "經理人班第12期",
     date: "2026/03",
     totalMembers: 52,
-    totalGroups: 8,
-    userRole: "第 3 組 學員",
+    totalGroups: 10,
+    userRole: "第 9 組 學員",
     isCurrent: true,
     isDemoMode: true,
   },
@@ -101,7 +101,7 @@ export const CURRENT_USER_DEFAULT: UserProfile = {
   company: "台積電 TSMC",
   title: "資深 AI 專案工程師",
   industry: "半導體與硬體",
-  group: 3,
+  group: 9,
   role: "學員",
   businessCardUrl: SAMPLE_CARD_TSMC,
   mediaType: "card",
@@ -178,7 +178,7 @@ export function generateMockMembers(currentUser: UserProfile): UserProfile[] {
     const surname = SURNAMES[i % SURNAMES.length];
     const firstname = FIRSTNAMES[i % FIRSTNAMES.length];
     const name = surname + firstname;
-    const group = (i % 8) + 1; // 1 ~ 8 組
+    const group = (i % 10) + 1; // 1 ~ 10 組
     const title = TITLES[i % TITLES.length];
     const offerList = OFFERS_BY_IND[ind] || OFFERS_BY_IND["其他多元領域"];
     const seekList = SEEKS_BY_IND[ind] || SEEKS_BY_IND["其他多元領域"];

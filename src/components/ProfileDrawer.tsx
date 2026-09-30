@@ -316,7 +316,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                   {displayMember.name}
                 </h3>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30">
-                  第 {displayMember.group} 組 {displayMember.role === "組長" ? "· 組長" : ""}
+                  第 {displayMember.group} 組 {displayMember.role && displayMember.role !== "學員" ? `· ${displayMember.role}` : ""}
                 </span>
                 {isSelf && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-bold">

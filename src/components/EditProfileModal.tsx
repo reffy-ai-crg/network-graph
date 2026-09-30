@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
-import { IndustryType } from "../types/network";
+import { IndustryType, UserProfile } from "../types/network";
 import { compressImage } from "../lib/imageUtils";
 import { 
   X, 
@@ -42,6 +42,10 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   // 若為「其他多元領域」，學員自行輸入的具體產業名稱
   const [customIndustry, setCustomIndustry] = useState<string>("");
 
+  // 所屬組別與班級身分
+  const [group, setGroup] = useState<number>(currentUser.group || 9);
+  const [role, setRole] = useState<string>(currentUser.role || "學員");
+
   const [offer, setOffer] = useState(currentUser.offer);
   const [seek, setSeek] = useState(currentUser.seek);
 
@@ -50,6 +54,8 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       setName(currentUser.name);
       setCompany(currentUser.company);
       setTitle(currentUser.title);
+      setGroup(currentUser.group || 9);
+      setRole(currentUser.role || "學員");
       setOffer(currentUser.offer);
       setSeek(currentUser.seek);
       setAvatarUrl(currentUser.avatarUrl || "");
@@ -108,6 +114,8 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       surname: name.trim().slice(0, 1) || currentUser.surname,
       company: company.trim() || currentUser.company,
       title: title.trim() || currentUser.title,
+      group: Number(group) || 1,
+      role: (role.trim() || "學員") as UserProfile["role"],
       industry: finalIndustry,
       offer: offer.trim() || currentUser.offer,
       seek: seek.trim() || currentUser.seek,
@@ -303,6 +311,44 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
                 required
               />
+            </div>
+          </div>
+
+          {/* 所屬組別與班級身分設定 */}
+          <div className="grid grid-cols-2 gap-2.5 bg-slate-50/80 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80">
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+                所屬組別
+              </label>
+              <select
+                value={group}
+                onChange={(e) => setGroup(Number(e.target.value))}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
+              >
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((g) => (
+                  <option key={g} value={g}>
+                    第 {g} 組 {g === 9 ? "🌟" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+                班級身分
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
+              >
+                <option value="學員">學員</option>
+                <option value="組長">組長</option>
+                <option value="副組長">副組長</option>
+                <option value="助教">助教</option>
+                <option value="講師">講師</option>
+                <option value="活動籌備">活動籌備</option>
+                <option value="貴賓">貴賓</option>
+              </select>
             </div>
           </div>
 

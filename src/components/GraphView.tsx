@@ -20,7 +20,9 @@ interface GraphNode {
 
 const GROUP_COLORS = [
   "#10b981", "#3b82f6", "#8b5cf6", "#ec4899",
-  "#f59e0b", "#06b6d4", "#f97316", "#84cc16"
+  "#f59e0b", "#06b6d4", "#f97316", "#84cc16",
+  "#6366f1", "#14b8a6", "#d946ef", "#e11d48",
+  "#0284c7", "#ca8a04", "#9333ea", "#475569"
 ];
 
 const INDUSTRY_COLORS: Record<IndustryType, string> = {
@@ -88,9 +90,10 @@ export function GraphView() {
     const h = canvas.height;
     const cx = w / 2;
     const cy = h / 2;
+    const maxGroup = Math.max(...members.map((m) => m.group || 1), 10);
 
     nodesRef.current = members.map((m) => {
-      const groupAngle = ((m.group - 1) / 8) * Math.PI * 2;
+      const groupAngle = ((m.group - 1) / maxGroup) * Math.PI * 2;
       const radius = Math.min(w, h) * 0.32;
       const targetX = cx + Math.cos(groupAngle) * radius + (Math.random() - 0.5) * 60;
       const targetY = cy + Math.sin(groupAngle) * radius + (Math.random() - 0.5) * 60;
@@ -117,11 +120,12 @@ export function GraphView() {
     const h = canvas.height;
     const cx = w / 2;
     const cy = h / 2;
+    const maxGroup = Math.max(...members.map((m) => m.group || 1), 10);
 
     // 組別中心聚類點
     const groupCenters: { x: number; y: number }[] = [];
-    for (let g = 1; g <= 8; g++) {
-      const ang = ((g - 1) / 8) * Math.PI * 2;
+    for (let g = 1; g <= maxGroup; g++) {
+      const ang = ((g - 1) / maxGroup) * Math.PI * 2;
       const rad = Math.min(w, h) * 0.30;
       groupCenters[g] = { x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad };
     }

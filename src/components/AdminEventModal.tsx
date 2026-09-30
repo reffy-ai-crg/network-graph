@@ -55,7 +55,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const [title, setTitle] = useState(currentEvent.title);
   const [cohort, setCohort] = useState(currentEvent.cohort);
   const [slug, setSlug] = useState(currentEvent.slug || "aia-12");
-  const [totalGroups, setTotalGroups] = useState(currentEvent.totalGroups || 8);
+  const [totalGroups, setTotalGroups] = useState(currentEvent.totalGroups || 10);
   const [date, setDate] = useState(currentEvent.date || "2026/03");
   const [passcode, setPasscode] = useState(currentEvent.passcode || "");
   const [isDemo, setIsDemo] = useState(currentEvent.isDemoMode ?? true);
@@ -64,7 +64,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const [newTitle, setNewTitle] = useState("");
   const [newCohort, setNewCohort] = useState("");
   const [newSlug, setNewSlug] = useState("");
-  const [newGroups, setNewGroups] = useState(8);
+  const [newGroups, setNewGroups] = useState(10);
   const [newPasscode, setNewPasscode] = useState("");
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       setTitle(currentEvent.title);
       setCohort(currentEvent.cohort);
       setSlug(currentEvent.slug || "aia-12");
-      setTotalGroups(currentEvent.totalGroups || 8);
+      setTotalGroups(currentEvent.totalGroups || 10);
       setDate(currentEvent.date || "2026/03");
       setPasscode(currentEvent.passcode || "");
       setIsDemo(currentEvent.isDemoMode ?? true);

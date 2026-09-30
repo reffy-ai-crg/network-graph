@@ -7,12 +7,23 @@ import { IndustryType, UserProfile } from "../types/network";
 import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard } from "lucide-react";
 
 export function DirectoryView() {
-  const { members, openDrawer, privateNotes, showToast } = useNetwork();
+  const { members, openDrawer, privateNotes, showToast, currentEvent } = useNetwork();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("全部");
   const [selectedGroup, setSelectedGroup] = useState<string>("全部");
 
-  const groups = useMemo(() => ["全部", "第 1 組", "第 2 組", "第 3 組", "第 4 組", "第 5 組", "第 6 組", "第 7 組", "第 8 組"], []);
+  const groups = useMemo(() => {
+    const groupNums = new Set<number>();
+    const total = currentEvent?.totalGroups || 10;
+    for (let i = 1; i <= Math.max(total, 10); i++) {
+      groupNums.add(i);
+    }
+    members.forEach((m) => {
+      if (m.group) groupNums.add(m.group);
+    });
+    const sorted = Array.from(groupNums).sort((a, b) => a - b);
+    return ["全部", ...sorted.map((g) => `第 ${g} 組`)];
+  }, [members, currentEvent?.totalGroups]);
 
   const allIndustries = useMemo(() => {
     const customSet = new Set<string>();

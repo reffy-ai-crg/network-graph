@@ -244,6 +244,18 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
 
+    if (updates.group !== undefined || updates.role !== undefined) {
+      setCurrentEvent((prev) => {
+        const nextGroup = updates.group ?? currentUser.group;
+        const nextRole = updates.role ?? currentUser.role;
+        return {
+          ...prev,
+          userRole: `第 ${nextGroup} 組 ${nextRole}`,
+          totalGroups: Math.max(prev.totalGroups || 10, nextGroup),
+        };
+      });
+    }
+
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       client
