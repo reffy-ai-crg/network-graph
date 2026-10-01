@@ -26,6 +26,7 @@ const GROUP_COLORS = [
 ];
 
 function getGroupColor(group: number): string {
+  if (group === 0) return "#f59e0b"; // 巡迴指導 (導師與助教) 尊榮琥珀金
   if (group >= 1 && group <= GROUP_COLORS.length) {
     return GROUP_COLORS[group - 1];
   }
@@ -103,10 +104,22 @@ export function GraphView() {
     const maxGroup = Math.max(...members.map((m) => m.group || 1), 10);
 
     nodesRef.current = members.map((m) => {
-      const groupAngle = ((m.group - 1) / maxGroup) * Math.PI * 2;
-      const radius = Math.min(w, h) * 0.32;
-      const targetX = cx + Math.cos(groupAngle) * radius + (Math.random() - 0.5) * 60;
-      const targetY = cy + Math.sin(groupAngle) * radius + (Math.random() - 0.5) * 60;
+      let targetX: number;
+      let targetY: number;
+
+      if (m.group === 0) {
+        // 巡迴導師與助教：初始分佈在星系的核心中央區域
+        targetX = cx + (Math.random() - 0.5) * 80;
+        targetY = cy + (Math.random() - 0.5) * 80;
+      } else {
+        const groupAngle = ((m.group - 1) / maxGroup) * Math.PI * 2;
+        const radius = Math.min(w, h) * 0.32;
+        targetX = cx + Math.cos(groupAngle) * radius + (Math.random() - 0.5) * 60;
+        targetY = cy + Math.sin(groupAngle) * radius + (Math.random() - 0.5) * 60;
+      }
+
+      // 導師與助教節點半徑較大且具尊榮度
+      const radius = m.role === "講師" ? 19 : m.role === "助教" ? 16 : m.isCurrentUser ? 18 : 14;
 
       return {
         id: m.id,
@@ -115,7 +128,7 @@ export function GraphView() {
         y: targetY,
         vx: 0,
         vy: 0,
-        radius: m.isCurrentUser ? 18 : 14,
+        radius,
         groupColor: getGroupColor(m.group),
         industryColor: getIndustryColor(m.industry),
       };
@@ -132,8 +145,9 @@ export function GraphView() {
     const cy = h / 2;
     const maxGroup = Math.max(...members.map((m) => m.group || 1), 10);
 
-    // 組別中心聚類點
+    // 組別中心聚類點 (第 0 組設在星系正中心)
     const groupCenters: { x: number; y: number }[] = [];
+    groupCenters[0] = { x: cx, y: cy };
     for (let g = 1; g <= maxGroup; g++) {
       const ang = ((g - 1) / maxGroup) * Math.PI * 2;
       const rad = Math.min(w, h) * 0.30;
@@ -220,18 +234,25 @@ export function GraphView() {
         avgX /= list.length;
         avgY /= list.length;
 
+        const isRoaming = Number(g) === 0;
         ctx.beginPath();
-        ctx.arc(avgX, avgY, 68, 0, Math.PI * 2);
-        ctx.fillStyle = isLight ? "rgba(226, 232, 240, 0.7)" : "rgba(30, 41, 59, 0.4)";
+        ctx.arc(avgX, avgY, isRoaming ? 80 : 68, 0, Math.PI * 2);
+        ctx.fillStyle = isRoaming
+          ? (isLight ? "rgba(254, 243, 199, 0.65)" : "rgba(120, 53, 15, 0.3)")
+          : (isLight ? "rgba(226, 232, 240, 0.7)" : "rgba(30, 41, 59, 0.4)");
         ctx.fill();
-        ctx.strokeStyle = isLight ? "rgba(203, 213, 225, 0.8)" : "rgba(71, 85, 105, 0.25)";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = isRoaming
+          ? (isLight ? "rgba(245, 158, 11, 0.8)" : "rgba(245, 158, 11, 0.5)")
+          : (isLight ? "rgba(203, 213, 225, 0.8)" : "rgba(71, 85, 105, 0.25)");
+        ctx.lineWidth = isRoaming ? 1.8 : 1;
         ctx.stroke();
 
-        ctx.fillStyle = isLight ? "rgba(71, 85, 105, 0.85)" : "rgba(148, 163, 184, 0.6)";
-        ctx.font = "bold 10px sans-serif";
+        ctx.fillStyle = isRoaming
+          ? (isLight ? "#b45309" : "#fbbf24")
+          : (isLight ? "rgba(71, 85, 105, 0.85)" : "rgba(148, 163, 184, 0.6)");
+        ctx.font = isRoaming ? "bold 11px sans-serif" : "bold 10px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(`第 ${g} 組`, avgX, avgY - 50);
+        ctx.fillText(isRoaming ? "🎓 巡迴導師與助教群" : `第 ${g} 組`, avgX, avgY - (isRoaming ? 60 : 50));
       });
     }
 
@@ -256,6 +277,8 @@ export function GraphView() {
     nodes.forEach((node) => {
       const isMatch = highlightedIndustry === "all" || node.member.industry === highlightedIndustry;
       const opacity = isMatch ? 1 : 0.2;
+      const isTeacher = node.member.role === "講師";
+      const isTA = node.member.role === "助教";
 
       ctx.save();
       ctx.globalAlpha = opacity;
@@ -268,11 +291,30 @@ export function GraphView() {
         ctx.fill();
       }
 
+      // 導師與助教外環光暈
+      if (isTeacher) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius + 4.5, 0, Math.PI * 2);
+        ctx.strokeStyle = isLight ? "#d97706" : "#f59e0b";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      } else if (isTA) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius + 3.5, 0, Math.PI * 2);
+        ctx.strokeStyle = isLight ? "#0284c7" : "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
       // 節點本體
       ctx.beginPath();
       ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
       ctx.fillStyle = node.member.isCurrentUser
         ? "#10b981"
+        : isTeacher
+        ? "#f59e0b"
+        : isTA
+        ? "#0284c7"
         : clusterMode === "group"
         ? node.groupColor
         : node.industryColor;
@@ -285,16 +327,21 @@ export function GraphView() {
 
       // 姓氏文字
       ctx.fillStyle = "#ffffff";
-      ctx.font = `bold ${node.member.isCurrentUser ? 11 : 9}px sans-serif`;
+      ctx.font = `bold ${isTeacher ? 12 : isTA ? 10 : node.member.isCurrentUser ? 11 : 9}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(node.member.surname, node.x, node.y);
 
       // 下方姓名文字
       if (opacity > 0.5) {
-        ctx.fillStyle = isLight ? "#1e293b" : "#cbd5e1";
-        ctx.font = isLight ? "bold 9px sans-serif" : "9px sans-serif";
-        ctx.fillText(node.member.name, node.x, node.y + node.radius + 11);
+        ctx.fillStyle = isTeacher
+          ? (isLight ? "#b45309" : "#fbbf24")
+          : isTA
+          ? (isLight ? "#0369a1" : "#38bdf8")
+          : (isLight ? "#1e293b" : "#cbd5e1");
+        ctx.font = (isTeacher || isTA) ? "bold 10px sans-serif" : (isLight ? "bold 9px sans-serif" : "9px sans-serif");
+        const rolePrefix = isTeacher ? "👑 " : isTA ? "💼 " : "";
+        ctx.fillText(`${rolePrefix}${node.member.name}`, node.x, node.y + node.radius + 12);
       }
 
       ctx.restore();

@@ -187,7 +187,102 @@ const TITLES = ["資深主任工程師", "技術總監 (Director)", "AI 專案�
 export function generateMockMembers(currentUser: UserProfile): UserProfile[] {
   const result: UserProfile[] = [{ ...currentUser }];
 
-  for (let i = 2; i <= 52; i++) {
+  // 1. 特邀授課導師 (講師身分，巡迴指導)
+  result.push({
+    id: "member-teacher-1",
+    name: "李宏毅 講座教授",
+    surname: "李",
+    company: "台灣人工智慧學校 (AIA) / 台大電機資訊",
+    title: "特聘校務講座導師 / 教授",
+    industry: "人工智慧與數據",
+    group: 0,
+    role: "講師",
+    lineId: "prof_lee_ai",
+    linkedinUrl: "https://linkedin.com/in/hung-yi-lee",
+    offer: "前瞻生成式 AI 技術藍圖、大模型私有化與科研落地輔導",
+    seek: "促進台灣產業 AI 深度賦能、產學前沿研究課題交流",
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+    businessCardUrl: SAMPLE_CARD_MSFT,
+    mediaType: "avatar",
+    isCurrentUser: false,
+  });
+
+  result.push({
+    id: "member-teacher-2",
+    name: "張智星 博士",
+    surname: "張",
+    company: "台灣人工智慧學校 (AIA) / 首席技術顧問",
+    title: "資深產業客座導師",
+    industry: "專業顧問與創投",
+    group: 0,
+    role: "講師",
+    lineId: "dr_chang_advisor",
+    linkedinUrl: "https://linkedin.com/in/dr-chang-ai",
+    offer: "智慧製造與音訊影像演算法架構、企業 AI 轉型戰略諮詢",
+    seek: "半導體與先進製造場域之商業驗證合作",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
+    businessCardUrl: SAMPLE_CARD_TSMC,
+    mediaType: "card",
+    isCurrentUser: false,
+  });
+
+  // 2. 隨班助教團隊 (助教身分，巡迴指導)
+  result.push({
+    id: "member-ta-1",
+    name: "林建志 (Ken)",
+    surname: "林",
+    company: "AIA 助教團隊 / 聯發科技 AI 研發",
+    title: "班級總助教 (Head TA)",
+    industry: "半導體與硬體",
+    group: 0,
+    role: "助教",
+    lineId: "ken_head_ta",
+    linkedinUrl: "https://linkedin.com/in/ken-lin-ta",
+    offer: "PyTorch 深度學習訓練除錯、GPU 算力集群排程架構",
+    seek: "協助 1~10 組確認期末專題題目可行性與技術選型",
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
+    mediaType: "avatar",
+    isCurrentUser: false,
+  });
+
+  result.push({
+    id: "member-ta-2",
+    name: "陳怡萱 (Sandy)",
+    surname: "陳",
+    company: "AIA 助教團隊 / 國泰金控數據架構師",
+    title: "隨班實務助教",
+    industry: "金融科技與金控",
+    group: 0,
+    role: "助教",
+    lineId: "sandy_ta_nlp",
+    linkedinUrl: "https://linkedin.com/in/sandy-chen-ta",
+    offer: "金融 RAG 知識庫搭建、合規風控模型設計指導",
+    seek: "輔導各組實作進度與期末專案發表演練",
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+    mediaType: "avatar",
+    isCurrentUser: false,
+  });
+
+  result.push({
+    id: "member-ta-3",
+    name: "王冠傑 (Eric)",
+    surname: "王",
+    company: "AIA 助教團隊 / 趨勢科技 AI 資安工程師",
+    title: "技術實驗室助教",
+    industry: "軟體與雲端運算",
+    group: 0,
+    role: "助教",
+    lineId: "eric_ta_cloud",
+    linkedinUrl: "https://linkedin.com/in/eric-wang-ta",
+    offer: "Docker 容器化環境建置、AI API 資安滲透防護",
+    seek: "提供學員雲端沙盒與實作環境疑難排解",
+    avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80",
+    mediaType: "avatar",
+    isCurrentUser: false,
+  });
+
+  // 3. 各組學員與組長
+  for (let i = 2; i <= 50; i++) {
     const ind = INDUSTRIES[i % INDUSTRIES.length];
     const compList = COMPANIES_BY_IND[ind] || COMPANIES_BY_IND["其他多元領域"];
     const company = compList[i % compList.length];

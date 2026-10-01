@@ -230,8 +230,15 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-bold text-slate-900 dark:text-white truncate">{m.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold shrink-0">
-                    第 {m.group} 組
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold shrink-0 ${
+                    m.role === "講師"
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-500/30"
+                      : m.role === "助教"
+                      ? "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 font-bold border border-sky-300 dark:border-sky-500/30"
+                      : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                  }`}>
+                    {m.group === 0 ? "🎓 巡迴" : `第 ${m.group} 組`}
+                    {m.role === "講師" ? " · 導師" : m.role === "助教" ? " · 助教" : m.role === "組長" ? " · 組長" : ""}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{m.company}</p>

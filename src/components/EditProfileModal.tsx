@@ -325,6 +325,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 onChange={(e) => setGroup(Number(e.target.value))}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
               >
+                <option value={0}>🎓 巡迴指導（不限組別 / 導師助教）</option>
                 {Array.from({ length: 50 }, (_, i) => i + 1).map((g) => (
                   <option key={g} value={g}>
                     第 {g} 組 {g === 9 ? "🌟" : ""}
@@ -338,16 +339,22 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               </label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  const newRole = e.target.value;
+                  setRole(newRole);
+                  if ((newRole === "講師" || newRole === "助教") && group > 0) {
+                    setGroup(0); // 自動切換為巡迴指導
+                  }
+                }}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
               >
-                <option value="學員">學員</option>
-                <option value="組長">組長</option>
-                <option value="副組長">副組長</option>
-                <option value="助教">助教</option>
-                <option value="講師">講師</option>
-                <option value="活動籌備">活動籌備</option>
-                <option value="貴賓">貴賓</option>
+                <option value="學員">👤 學員</option>
+                <option value="組長">🌟 組長</option>
+                <option value="副組長">⭐ 副組長</option>
+                <option value="助教">💼 隨班助教</option>
+                <option value="講師">👨‍🏫 授課導師</option>
+                <option value="活動籌備">📋 活動籌備</option>
+                <option value="貴賓">👑 特邀貴賓</option>
               </select>
             </div>
           </div>

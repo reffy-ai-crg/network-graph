@@ -384,12 +384,19 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   {displayMember.name}
                 </h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30">
-                  第 {displayMember.group} 組 {displayMember.role && displayMember.role !== "學員" ? `· ${displayMember.role}` : ""}
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                  displayMember.role === "講師"
+                    ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                    : displayMember.role === "助教"
+                    ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40"
+                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30"
+                }`}>
+                  {displayMember.group === 0 ? "🎓 巡迴指導" : `第 ${displayMember.group} 組`}
+                  {displayMember.role && displayMember.role !== "學員" ? ` · ${displayMember.role === "講師" ? "授課導師" : displayMember.role === "助教" ? "隨班助教" : displayMember.role}` : ""}
                 </span>
                 {isSelf && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-bold">

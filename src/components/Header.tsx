@@ -51,7 +51,7 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
               )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-              <span>👥 全班 {currentEvent.totalMembers} 位</span>
+              <span>👥 全體 {members.length} 位 (含導師助教)</span>
               <span>•</span>
               <span>🧩 {currentEvent.totalGroups} 個組別</span>
               <span>•</span>
