@@ -62,7 +62,25 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     return INITIAL_EVENTS;
   });
 
-  const [currentEvent, setCurrentEvent] = useState<EventSpace>(INITIAL_EVENTS[0]);
+  const [currentEvent, setCurrentEvent] = useState<EventSpace>(() => {
+    if (typeof window !== "undefined") {
+      const activeId = localStorage.getItem("network_graph_active_event_id");
+      const saved = localStorage.getItem("network_graph_events");
+      if (saved) {
+        try {
+          const parsed: EventSpace[] = JSON.parse(saved);
+          if (activeId) {
+            const found = parsed.find((e) => e.id === activeId || e.slug === activeId);
+            if (found) return found;
+          }
+          if (parsed.length > 0) return parsed[0];
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return INITIAL_EVENTS[0];
+  });
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<ViewTab>("directory");
   const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);
@@ -342,12 +360,15 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   };
 
   const switchEvent = (eventId: string) => {
-    const found = events.find((e) => e.id === eventId);
+    const found = events.find((e) => e.id === eventId || e.slug === eventId);
     if (found) {
       setEvents((prev) =>
-        prev.map((e) => ({ ...e, isCurrent: e.id === eventId }))
+        prev.map((e) => ({ ...e, isCurrent: e.id === found.id }))
       );
       setCurrentEvent(found);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_active_event_id", found.id);
+      }
       if (found.isDemoMode !== false) {
         setMembers(generateMockMembers(currentUser));
       } else {
@@ -414,11 +435,15 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       const updated = [fullEvent, ...prev.map((e) => ({ ...e, isCurrent: false }))];
       if (typeof window !== "undefined") {
         localStorage.setItem("network_graph_events", JSON.stringify(updated));
+        localStorage.setItem("network_graph_active_event_id", eventId);
       }
       return updated;
     });
 
     setCurrentEvent(fullEvent);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("network_graph_active_event_id", eventId);
+    }
     setMembers([{ ...currentUser }]);
     setActiveTab("directory");
 
