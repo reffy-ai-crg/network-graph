@@ -109,9 +109,18 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         try { setPrivateNotes(JSON.parse(savedNotes)); } catch (e) { console.error(e); }
       }
 
-      // 檢查網址參數 ?event=slug
+      // 檢查網址參數 ?event=slug 或 LINE LIFF 的 ?liff.state=%3Fevent%3Dslug
       const params = new URLSearchParams(window.location.search);
-      const eventSlug = params.get("event");
+      let eventSlug = params.get("event");
+      if (!eventSlug) {
+        const liffState = params.get("liff.state");
+        if (liffState) {
+          const decoded = decodeURIComponent(liffState);
+          const liffParams = new URLSearchParams(decoded.startsWith("?") ? decoded : `?${decoded}`);
+          eventSlug = liffParams.get("event");
+        }
+      }
+
       if (eventSlug) {
         const found = events.find((e) => e.slug === eventSlug || e.id === eventSlug);
         if (found) {
@@ -144,7 +153,15 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
           if (!eventErr && cloudEvents && cloudEvents.length > 0) {
             setIsCloudConnected(true);
             const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-            const targetSlug = params?.get("event");
+            let targetSlug = params?.get("event");
+            if (!targetSlug && params) {
+              const liffState = params.get("liff.state");
+              if (liffState) {
+                const decoded = decodeURIComponent(liffState);
+                const liffParams = new URLSearchParams(decoded.startsWith("?") ? decoded : `?${decoded}`);
+                targetSlug = liffParams.get("event");
+              }
+            }
 
             const savedLocal = typeof window !== "undefined" ? localStorage.getItem("network_graph_events") : null;
             let localEvents: EventSpace[] = [];
