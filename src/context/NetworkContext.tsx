@@ -179,7 +179,21 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
               };
             });
 
-          setMembers(realMembers);
+          // 自動去重機制：以姓名或 lineId 為鍵值，確保每人僅佔有一張名片，優先保留有大頭貼或本人的紀錄
+          const deduplicatedMap = new Map<string, UserProfile>();
+          realMembers.forEach((member) => {
+            const key = member.lineId || member.name;
+            const existing = deduplicatedMap.get(key);
+            if (!existing) {
+              deduplicatedMap.set(key, member);
+            } else {
+              if ((!existing.avatarUrl && member.avatarUrl) || member.isCurrentUser) {
+                deduplicatedMap.set(key, member);
+              }
+            }
+          });
+
+          setMembers(Array.from(deduplicatedMap.values()));
           return;
         }
       } catch (err) {
