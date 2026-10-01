@@ -1,6 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { NetworkProvider } from "../context/NetworkContext";
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#f8fafc",
+};
 
 export const metadata: Metadata = {
   title: "人脈圖 Network Graph | 活動專屬關係圖譜與人脈存摺",
@@ -19,6 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-TW" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light" />
+      </head>
       <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col">
         <NetworkProvider>
           {children}

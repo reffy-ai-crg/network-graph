@@ -4,6 +4,7 @@
 
 /* 預設色彩變數 (方案一：高階商務藍 Tech Navy & Royal Blue) */
 :root, [data-theme-preset="blue"] {
+  color-scheme: light;
   --background: #f8fafc;
   --foreground: #0f172a;
   --theme-page-bg: #f8fafc;
@@ -87,6 +88,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #020617;
   --foreground: #f8fafc;
   --theme-page-bg: #020617;

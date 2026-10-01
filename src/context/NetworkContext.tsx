@@ -76,12 +76,17 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
   // 初始化資料與雲端 Supabase 連線
   useEffect(() => {
-    // 0. 主題與管理員授權載入
+    // 0. 主題與管理員授權載入（全面升級為淺色 方案一 為唯一預設）
     if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("network_graph_theme") as "light" | "dark" | null;
-      const initialTheme = savedTheme || "light";
-      setTheme(initialTheme);
-      if (initialTheme === "dark") {
+      let activeTheme = localStorage.getItem("network_graph_theme_v2") as "light" | "dark" | null;
+      if (!activeTheme) {
+        // 徹底清除過去早期版本殘留在手機/LINE內存的舊版 dark 快取
+        localStorage.removeItem("network_graph_theme");
+        activeTheme = "light";
+        localStorage.setItem("network_graph_theme_v2", "light");
+      }
+      setTheme(activeTheme);
+      if (activeTheme === "dark") {
         document.documentElement.classList.add("dark");
       } else {
         document.documentElement.classList.remove("dark");
@@ -430,7 +435,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
       if (typeof window !== "undefined") {
-        localStorage.setItem("network_graph_theme", next);
+        localStorage.setItem("network_graph_theme_v2", next);
         if (next === "dark") {
           document.documentElement.classList.add("dark");
         } else {
@@ -444,7 +449,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const setThemeExplicit = (t: "light" | "dark") => {
     setTheme(t);
     if (typeof window !== "undefined") {
-      localStorage.setItem("network_graph_theme", t);
+      localStorage.setItem("network_graph_theme_v2", t);
       if (t === "dark") {
         document.documentElement.classList.add("dark");
       } else {
