@@ -121,7 +121,7 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
             }`}
           >
             <Grid className="w-3.5 h-3.5" />
-            <span>目錄清單</span>
+            <span>目錄清單 ({members.length})</span>
           </button>
 
           <button
@@ -133,7 +133,7 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>動態圖譜</span>
+            <span>動態圖譜 ({members.length})</span>
           </button>
 
           <button
