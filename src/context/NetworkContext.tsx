@@ -1,10 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { UserProfile, EventSpace, ViewTab } from "../types/network";
 import { CURRENT_USER_DEFAULT, INITIAL_EVENTS, generateMockMembers } from "../lib/mockData";
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
 import { initLiff } from "../lib/liffClient";
+
+export function getOrCreateUserUuid(): string {
+  if (typeof window === "undefined") return "00000000-0000-0000-0000-000000000001";
+  let uuid = localStorage.getItem("network_graph_user_uuid");
+  if (!uuid) {
+    uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+    localStorage.setItem("network_graph_user_uuid", uuid);
+  }
+  return uuid;
+}
 
 interface NetworkContextType {
   currentUser: UserProfile;
@@ -23,6 +37,7 @@ interface NetworkContextType {
   updateEventSettings: (eventId: string, updates: Partial<EventSpace>) => void;
   createNewEvent: (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => void;
   toggleEventDemoMode: (eventId: string, isDemo: boolean) => void;
+  refreshMembers: () => void;
   toastMessage: string | null;
   showToast: (msg: string) => void;
   isCloudConnected: boolean;
@@ -46,7 +61,12 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("network_graph_user");
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        try {
+          const parsed = JSON.parse(saved);
+          return parsed;
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
     return CURRENT_USER_DEFAULT;
@@ -56,7 +76,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("network_graph_events");
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
     return INITIAL_EVENTS;
@@ -81,6 +105,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
     return INITIAL_EVENTS[0];
   });
+
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<ViewTab>("directory");
   const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);
@@ -92,13 +117,92 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [adminPin, setAdminPinState] = useState("888888");
 
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 2800);
+  }, []);
+
+  // 核心名冊載入函式：徹底分離「55位虛擬示範」與「純淨真實模式」
+  const loadMembersForEvent = useCallback(async (targetEvent: EventSpace, user: UserProfile) => {
+    // 1. 若為示範模式（例如 第12期），載入 55 位 mock 企業主管
+    if (targetEvent.isDemoMode !== false) {
+      setMembers(generateMockMembers(user));
+      return;
+    }
+
+    // 2. 若為純淨真實模式（例如 AIPM 第二期），100% 杜絕虛擬人
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("event_members")
+          .select("*, profiles(*)")
+          .eq("event_id", targetEvent.id);
+
+        if (!error && data) {
+          const userUuid = getOrCreateUserUuid();
+          const realMembers: UserProfile[] = data
+            .filter((row: any) => row.profiles)
+            .map((row: any) => {
+              const p = row.profiles;
+              const isSelf =
+                p.id === userUuid ||
+                p.id === user.id ||
+                (user.lineId && (p.line_id === user.lineId || p.line_user_id === user.lineId)) ||
+                (p.display_name === user.name && user.name !== "陳志豪 (Kevin)");
+
+              return {
+                id: p.id,
+                name: p.display_name,
+                surname: p.display_name.slice(0, 1),
+                company: p.company || "",
+                title: p.job_title || "",
+                industry: p.industry || "其他多元領域",
+                group: row.group_number || 1,
+                role: row.role || "一般學員",
+                avatarUrl: p.avatar_url || undefined,
+                lineId: p.line_id || "",
+                linkedinUrl: p.linkedin_url || "",
+                offer: p.offer_text || "",
+                seek: p.seek_text || "",
+                isCurrentUser: Boolean(isSelf),
+              };
+            });
+
+          setMembers(realMembers);
+          return;
+        }
+      } catch (err) {
+        console.warn("Supabase query event_members error:", err);
+      }
+    }
+
+    // 本地降級模式：若有自訂真實名片（非預設陳志豪），顯示自己；若無則為純淨空房間 []
+    const hasCustomUser =
+      typeof window !== "undefined" &&
+      Boolean(localStorage.getItem("network_graph_user")) &&
+      user.name !== "陳志豪 (Kevin)";
+
+    if (hasCustomUser) {
+      setMembers([{ ...user, isCurrentUser: true }]);
+    } else {
+      setMembers([]); // 完全零虛擬人
+    }
+  }, []);
+
+  // 手動刷新名冊
+  const refreshMembers = useCallback(() => {
+    loadMembersForEvent(currentEvent, currentUser);
+    showToast("名冊已同步更新最新雲端名單 ✓");
+  }, [currentEvent, currentUser, loadMembersForEvent, showToast]);
+
   // 初始化資料與雲端 Supabase 連線
   useEffect(() => {
-    // 0. 主題與管理員授權載入（全面升級為淺色 方案一 為唯一預設）
+    // 0. 主題與管理員授權載入
     if (typeof window !== "undefined") {
       let activeTheme = localStorage.getItem("network_graph_theme_v2") as "light" | "dark" | null;
       if (!activeTheme) {
-        // 徹底清除過去早期版本殘留在手機/LINE內存的舊版 dark 快取
         localStorage.removeItem("network_graph_theme");
         activeTheme = "light";
         localStorage.setItem("network_graph_theme_v2", "light");
@@ -120,11 +224,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       const sessionUnlocked = sessionStorage.getItem("network_graph_admin_unlocked");
       if (sessionUnlocked === "true") setIsAdminUnlocked(true);
     }
+
     // 1. 本地筆記快取載入
     if (typeof window !== "undefined") {
       const savedNotes = localStorage.getItem("network_graph_notes");
       if (savedNotes) {
-        try { setPrivateNotes(JSON.parse(savedNotes)); } catch (e) { console.error(e); }
+        try {
+          setPrivateNotes(JSON.parse(savedNotes));
+        } catch (e) {
+          console.error(e);
+        }
       }
 
       // 檢查網址參數 ?event=slug 或 LINE LIFF 的 ?liff.state=%3Fevent%3Dslug
@@ -143,23 +252,14 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         const found = events.find((e) => e.slug === eventSlug || e.id === eventSlug);
         if (found) {
           setCurrentEvent(found);
-          if (found.isDemoMode !== false) {
-            setMembers(generateMockMembers(currentUser));
-          } else {
-            setMembers([{ ...currentUser }]);
-          }
+          loadMembersForEvent(found, currentUser);
         }
+      } else {
+        loadMembersForEvent(currentEvent, currentUser);
       }
     }
 
-    // 2. 依照當前活動模式預載名冊
-    if (currentEvent.isDemoMode !== false) {
-      setMembers(generateMockMembers(currentUser));
-    } else {
-      setMembers([{ ...currentUser }]);
-    }
-
-    // 3. 嘗試連線雲端 Supabase
+    // 2. 嘗試連線雲端 Supabase 並同步活動房
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       const syncCloud = async () => {
@@ -184,24 +284,30 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
             const savedLocal = typeof window !== "undefined" ? localStorage.getItem("network_graph_events") : null;
             let localEvents: EventSpace[] = [];
             if (savedLocal) {
-              try { localEvents = JSON.parse(savedLocal); } catch (e) { console.error(e); }
+              try {
+                localEvents = JSON.parse(savedLocal);
+              } catch (e) {
+                console.error(e);
+              }
             }
 
             const mappedEvents: EventSpace[] = cloudEvents.map((e) => {
               const existingLocal = localEvents.find((l) => l.slug === e.slug || l.id === e.id);
               const isMatch = targetSlug ? e.slug === targetSlug : e.slug === (currentEvent.slug || "aia-12");
+              const isDemo = existingLocal?.isDemoMode ?? (e.slug === "aia-12");
+
               return {
                 id: e.id,
                 slug: e.slug,
                 title: e.name,
                 cohort: e.cohort,
                 date: e.event_date || "2026/03",
-                totalMembers: existingLocal?.totalMembers || (e.slug === "aia-12" ? 55 : 1),
+                totalMembers: existingLocal?.totalMembers || (isDemo ? 55 : 1),
                 totalGroups: e.total_groups || 10,
                 userRole: existingLocal?.userRole || (e.slug === "aia" ? "發起人 / 主辦" : "學員"),
                 isCurrent: isMatch,
                 passcode: e.passcode || "",
-                isDemoMode: existingLocal?.isDemoMode ?? (e.slug === "aia-12"),
+                isDemoMode: isDemo,
                 customRoles: existingLocal?.customRoles || ["授課導師", "隨班助教", "組長幹部", "一般學員"],
               };
             });
@@ -211,16 +317,13 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem("network_graph_events", JSON.stringify(mappedEvents));
             }
 
-            if (targetSlug) {
-              const matched = mappedEvents.find((e) => e.slug === targetSlug);
-              if (matched) {
-                setCurrentEvent(matched);
-                if (matched.isDemoMode) {
-                  setMembers(generateMockMembers(currentUser));
-                } else {
-                  setMembers([{ ...currentUser }]);
-                }
-              }
+            const active = targetSlug
+              ? mappedEvents.find((e) => e.slug === targetSlug)
+              : mappedEvents.find((e) => e.id === currentEvent.id || e.slug === currentEvent.slug) || mappedEvents[0];
+
+            if (active) {
+              setCurrentEvent(active);
+              loadMembersForEvent(active, currentUser);
             }
           }
 
@@ -243,12 +346,14 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       syncCloud();
     }
 
-    // 4. LINE LIFF 自動授權與資料帶入
+    // 3. LINE LIFF 自動授權與資料帶入
     initLiff().then((res) => {
       if (res.profile) {
+        const userUuid = getOrCreateUserUuid();
         setCurrentUser((prev) => {
           const updated = {
             ...prev,
+            id: userUuid,
             name: res.profile!.displayName,
             surname: res.profile!.displayName.slice(0, 1) || prev.surname,
             avatarUrl: res.profile!.pictureUrl || prev.avatarUrl,
@@ -262,14 +367,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         showToast(`已透過 LINE 登入：${res.profile.displayName}`);
       }
     });
-  }, []);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 2800);
-  };
+  }, [loadMembersForEvent, showToast]);
 
   const openDrawer = (member: UserProfile) => {
     setSelectedMember(member);
@@ -296,11 +394,12 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       if (content.trim()) {
+        const userUuid = getOrCreateUserUuid();
         client
           .from("private_notes")
           .upsert(
             {
-              author_id: "00000000-0000-0000-0000-000000000001",
+              author_id: userUuid,
               target_user_id: targetUserId,
               note_content: content.trim(),
               updated_at: new Date().toISOString(),
@@ -314,17 +413,14 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateCurrentUserProfile = (updates: Partial<UserProfile>) => {
-    setCurrentUser((prev) => {
-      const updated = { ...prev, ...updates };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("network_graph_user", JSON.stringify(updated));
-      }
-      setMembers((prevMembers) =>
-        prevMembers.map((m) => (m.isCurrentUser ? { ...m, ...updates } : m))
-      );
-      return updated;
-    });
+  const updateCurrentUserProfile = async (updates: Partial<UserProfile>) => {
+    const userUuid = getOrCreateUserUuid();
+    const updated: UserProfile = { ...currentUser, ...updates, id: userUuid };
+    setCurrentUser(updated);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("network_graph_user", JSON.stringify(updated));
+    }
 
     if (updates.group !== undefined || updates.role !== undefined) {
       setCurrentEvent((prev) => {
@@ -340,23 +436,48 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
-      client
-        .from("profiles")
-        .upsert({
-          display_name: updates.name,
-          company: updates.company,
-          job_title: updates.title,
-          industry: updates.industry,
-          offer_text: updates.offer,
-          seek_text: updates.seek,
-          updated_at: new Date().toISOString(),
-        })
-        .then(({ error }) => {
-          if (error) console.warn("Supabase update profile notice:", error.message);
-        });
+      try {
+        await client.from("profiles").upsert(
+          {
+            id: userUuid,
+            line_user_id: updated.lineId || null,
+            display_name: updated.name,
+            company: updated.company,
+            job_title: updated.title,
+            industry: updated.industry,
+            line_id: updated.lineId || null,
+            linkedin_url: updated.linkedinUrl || null,
+            offer_text: updated.offer,
+            seek_text: updated.seek,
+            avatar_url: updated.avatarUrl || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        );
+
+        if (currentEvent.id && currentEvent.isDemoMode === false) {
+          await client.from("event_members").upsert(
+            {
+              event_id: currentEvent.id,
+              user_id: userUuid,
+              group_number: updated.group || 1,
+              role: updated.role || "一般學員",
+            },
+            { onConflict: "event_id,user_id" }
+          );
+        }
+
+        await loadMembersForEvent(currentEvent, updated);
+      } catch (err) {
+        console.warn("Supabase upsert error:", err);
+      }
+    } else {
+      setMembers((prevMembers) =>
+        prevMembers.map((m) => (m.isCurrentUser ? { ...m, ...updates } : m))
+      );
     }
 
-    showToast("個人名片已即時全局同步至雲端與所有活動名冊 ✓");
+    showToast("個人名片已即時全局同步至雲端與活動名冊 ✓");
   };
 
   const switchEvent = (eventId: string) => {
@@ -369,11 +490,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.setItem("network_graph_active_event_id", found.id);
       }
-      if (found.isDemoMode !== false) {
-        setMembers(generateMockMembers(currentUser));
-      } else {
-        setMembers([{ ...currentUser }]);
-      }
+      loadMembersForEvent(found, currentUser);
       setActiveTab("directory");
       showToast(`已切換至「${found.title}」人脈名冊`);
     }
@@ -389,14 +506,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
 
-    setCurrentEvent((prev) => ({ ...prev, ...updates }));
+    const nextEvent = { ...currentEvent, ...updates };
+    setCurrentEvent(nextEvent);
 
     if (updates.isDemoMode !== undefined) {
-      if (updates.isDemoMode) {
-        setMembers(generateMockMembers(currentUser));
-      } else {
-        setMembers([{ ...currentUser }]);
-      }
+      loadMembersForEvent(nextEvent, currentUser);
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -419,16 +533,53 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     showToast("活動設定已成功更新並同步至雲端資料庫 ✓");
   };
 
-  // 建立全新活動房 (Admin)
-  const createNewEvent = (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => {
-    const eventId = `event-${Date.now()}`;
+  // 建立全新活動房 (Admin) - 預設為純淨真實模式
+  const createNewEvent = async (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => {
+    let eventId = `event-${Date.now()}`;
+    const userUuid = getOrCreateUserUuid();
+    const hasCustomUser = currentUser.name !== "陳志豪 (Kevin)";
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .insert({
+            slug: newEvent.slug,
+            name: newEvent.title,
+            cohort: newEvent.cohort,
+            total_groups: newEvent.totalGroups,
+            passcode: newEvent.passcode,
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          eventId = data.id;
+        }
+
+        if (hasCustomUser && eventId) {
+          await supabase.from("event_members").upsert(
+            {
+              event_id: eventId,
+              user_id: userUuid,
+              group_number: 1,
+              role: "發起人 / 主辦",
+            },
+            { onConflict: "event_id,user_id" }
+          );
+        }
+      } catch (err) {
+        console.warn("Supabase insert event error:", err);
+      }
+    }
+
     const fullEvent: EventSpace = {
       ...newEvent,
       id: eventId,
-      totalMembers: 1,
-      userRole: "發起人 / 主辦",
+      totalMembers: hasCustomUser ? 1 : 0,
+      userRole: hasCustomUser ? "發起人 / 主辦" : "學員",
       isCurrent: true,
-      isDemoMode: false,
+      isDemoMode: false, // 永遠預設為純淨真實模式
     };
 
     setEvents((prev) => {
@@ -444,32 +595,21 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.setItem("network_graph_active_event_id", eventId);
     }
-    setMembers([{ ...currentUser }]);
-    setActiveTab("directory");
 
-    if (isSupabaseConfigured && supabase) {
-      const client = supabase;
-      client
-        .from("events")
-        .insert({
-          slug: newEvent.slug,
-          name: newEvent.title,
-          cohort: newEvent.cohort,
-          total_groups: newEvent.totalGroups,
-          passcode: newEvent.passcode,
-        })
-        .then(({ error }) => {
-          if (error) console.warn("Supabase insert event notice:", error.message);
-        });
+    if (hasCustomUser) {
+      setMembers([{ ...currentUser, id: userUuid, isCurrentUser: true, role: "發起人 / 主辦", group: 1 }]);
+    } else {
+      setMembers([]); // 完全零人空房
     }
 
-    showToast(`新活動房「${newEvent.title}」建立成功！`);
+    setActiveTab("directory");
+    showToast(`新活動房「${newEvent.title}」建立成功！已啟用純淨真實模式。`);
   };
 
   // 切換示範名冊與真實名冊模式
   const toggleEventDemoMode = (eventId: string, isDemo: boolean) => {
     updateEventSettings(eventId, { isDemoMode: isDemo });
-    showToast(isDemo ? "已切換為【52位示範人物展示模式】" : "已切換為【純淨真實學員模式】");
+    showToast(isDemo ? "已切換為【55位示範人物展示模式】" : "已切換為【純淨真實模式（清空虛擬名單）】");
   };
 
   // 主題切換
@@ -557,6 +697,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         updateEventSettings,
         createNewEvent,
         toggleEventDemoMode,
+        refreshMembers,
         toastMessage,
         showToast,
         isCloudConnected,

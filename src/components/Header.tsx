@@ -102,8 +102,19 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
                           }`}
                         >
                           <div className="truncate pr-2">
-                            <div className="truncate font-semibold">{evt.title}</div>
-                            <div className="text-[10px] text-slate-400 font-normal">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate font-semibold">{evt.title}</span>
+                              {evt.isDemoMode !== false ? (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 font-normal shrink-0 border border-amber-300 dark:border-amber-700/50">
+                                  示範模式 (55位虛擬)
+                                </span>
+                              ) : (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 font-semibold shrink-0 border border-emerald-300 dark:border-emerald-700/50">
+                                  純淨真實模式 (0位虛擬)
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-normal mt-0.5">
                               {evt.cohort} · {evt.totalGroups}個組別
                             </div>
                           </div>

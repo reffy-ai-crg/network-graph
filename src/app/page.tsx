@@ -25,7 +25,9 @@ export default function Home() {
 
       {/* 核心視圖切換 */}
       <div className="flex-1 flex flex-col">
-        {activeTab === "directory" && <DirectoryView />}
+        {activeTab === "directory" && (
+          <DirectoryView onOpenEditModal={() => setIsEditModalOpen(true)} />
+        )}
         {activeTab === "graph" && <GraphView />}
         {activeTab === "hub" && (
           <MyHubView 

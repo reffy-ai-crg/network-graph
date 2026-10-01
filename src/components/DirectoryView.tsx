@@ -4,10 +4,14 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
-import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard, ZoomIn, Crown, Briefcase, User, Users } from "lucide-react";
+import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard, ZoomIn, Crown, Briefcase, User, Users, Share2, RefreshCw, Sparkles, UserPlus } from "lucide-react";
 
-export function DirectoryView() {
-  const { members, openDrawer, privateNotes, showToast, currentEvent } = useNetwork();
+interface DirectoryViewProps {
+  onOpenEditModal?: () => void;
+}
+
+export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
+  const { members, openDrawer, privateNotes, showToast, currentEvent, refreshMembers } = useNetwork();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("全部");
   const [selectedGroup, setSelectedGroup] = useState<string>("全部");
@@ -418,6 +422,60 @@ export function DirectoryView() {
               </div>
             );
           })}
+        </div>
+      ) : members.length === 0 ? (
+        /* 全新活動房間專屬空狀態（純淨真實模式，0 位虛擬人） */
+        <div className="flex flex-col items-center justify-center py-14 px-5 text-center bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm my-4 max-w-xl mx-auto w-full space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-3xl shadow-inner">
+            🌱
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                歡迎來到全新活動房間！
+              </h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-700/50">
+                純淨真實模式
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              「{currentEvent?.title}」目前尚未有成員進駐（無任何虛擬示範名單）。您可以建立第一張名片，或將專屬邀請發送給同學！
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full pt-2">
+            {onOpenEditModal && (
+              <button
+                onClick={onOpenEditModal}
+                className="w-full sm:flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>立即建立 / 填寫我的名片</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+                const inviteUrl = `${liffBaseUrl}?event=${currentEvent?.slug || "aia"}`;
+                if (typeof navigator !== "undefined" && navigator.clipboard) {
+                  navigator.clipboard.writeText(inviteUrl);
+                  showToast(`已複製專屬邀請連結！可直接貼至 LINE 班群邀請同學加入：\n${inviteUrl}`);
+                }
+              }}
+              className="w-full sm:flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700"
+            >
+              <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>複製 LINE 邀請連結</span>
+            </button>
+          </div>
+
+          <button
+            onClick={refreshMembers}
+            className="text-[11px] text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1 transition pt-1 cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>重新整理雲端最新名單</span>
+          </button>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center text-slate-500 dark:text-slate-400">

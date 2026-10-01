@@ -324,13 +324,13 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                           ? "bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30" 
                           : "bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
                       }`}>
-                        {isDemo ? "52位示範人物 (Demo)" : "純淨真實模式 (Live)"}
+                        {isDemo ? "55位示範人物 (Demo)" : "純淨真實模式 (0位虛擬人)"}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       {isDemo 
-                        ? "目前載入全班 52 位示範企業主管（台積電、微軟、金控等），適合用於對外演講展示效果。"
-                        : "目前已清空虛擬示範名單，僅保留真實掃碼加入的學員（適合正式場合使用）。"}
+                        ? "目前載入全班 55 位示範企業主管（台積電、微軟、金控等），適合用於對外演講展示效果。"
+                        : "目前已清空所有虛擬示範名單（0 位虛擬人），僅保留真實加入的學員與主辦，適合正式活動測試。"}
                     </p>
                     <button
                       type="button"
@@ -341,7 +341,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                       }}
                       className="w-full py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl border border-slate-300 dark:border-slate-700 font-medium transition"
                     >
-                      {isDemo ? "👉 切換為【純淨真實模式】（清空虛擬名單）" : "👉 切換回【52人示範展示模式】"}
+                      {isDemo ? "👉 切換為【純淨真實模式】（清空虛擬名單）" : "👉 切換回【55人示範展示模式】"}
                     </button>
                   </div>
 
