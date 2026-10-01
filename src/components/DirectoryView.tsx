@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
@@ -37,6 +37,60 @@ export function DirectoryView() {
     return [...INDUSTRIES, ...Array.from(customSet)];
   }, [members]);
 
+  const roomRoles = useMemo(() => {
+    if (currentEvent?.customRoles && currentEvent.customRoles.length > 0) {
+      return currentEvent.customRoles;
+    }
+    return ["授課導師", "隨班助教", "組長幹部", "一般學員"];
+  }, [currentEvent?.customRoles]);
+
+  const matchesRole = useCallback((memberRole: string | undefined, filterRole: string) => {
+    if (filterRole === "全部") return true;
+    const mRole = (memberRole || "一般學員").trim();
+    if (mRole === filterRole) return true;
+
+    // 導師 / 講師 / 授課導師
+    if (filterRole.includes("導師") || filterRole.includes("講師") || filterRole === "講師") {
+      if (mRole.includes("導師") || mRole.includes("講師") || mRole === "講師") return true;
+    }
+    // 助教 / 隨班助教
+    if (filterRole.includes("助教") || filterRole === "助教") {
+      if (mRole.includes("助教") || mRole === "助教") return true;
+    }
+    // 組長 / 組長幹部 / 副組長 / 隊長
+    if (filterRole.includes("組長") || filterRole.includes("幹部") || filterRole.includes("隊長") || filterRole === "組長") {
+      if (mRole.includes("組長") || mRole.includes("幹部") || mRole.includes("隊長") || mRole === "副組長") return true;
+    }
+    // 學員 / 一般學員 / 會員 / 參賽者
+    if (filterRole.includes("學員") || filterRole.includes("會員") || filterRole.includes("參賽") || filterRole === "學員") {
+      if (mRole.includes("學員") || mRole.includes("會員") || mRole.includes("參賽") || !memberRole || memberRole === "學員") return true;
+    }
+
+    return mRole.toLowerCase() === filterRole.toLowerCase() || mRole.includes(filterRole) || filterRole.includes(mRole);
+  }, []);
+
+  const roleFilters = useMemo(() => {
+    return [
+      { id: "全部", label: "全部成員", count: members.length },
+      ...roomRoles.map((role) => {
+        let icon = "👤 ";
+        if (role.includes("導師") || role.includes("講師") || role.includes("講者")) icon = "👨‍🏫 ";
+        else if (role.includes("助教")) icon = "💼 ";
+        else if (role.includes("組長") || role.includes("隊長") || role.includes("會長") || role.includes("幹部")) icon = "🌟 ";
+        else if (role.includes("評審") || role.includes("貴賓") || role.includes("VIP") || role.includes("顧問")) icon = "👑 ";
+        else if (role.includes("投資") || role.includes("創投") || role.includes("天使")) icon = "💎 ";
+        else if (role.includes("參賽") || role.includes("黑客") || role.includes("選手")) icon = "🚀 ";
+
+        const count = members.filter((m) => matchesRole(m.role, role)).length;
+        return {
+          id: role,
+          label: `${icon}${role}`,
+          count,
+        };
+      }),
+    ];
+  }, [members, roomRoles, matchesRole]);
+
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
       const matchInd = selectedIndustry === "全部" || m.industry === selectedIndustry;
@@ -45,12 +99,7 @@ export function DirectoryView() {
         (selectedGroup === "🎓 巡迴指導" && m.group === 0) ||
         `第 ${m.group} 組` === selectedGroup;
 
-      const matchRole =
-        selectedRole === "全部" ||
-        (selectedRole === "講師" && m.role === "講師") ||
-        (selectedRole === "助教" && m.role === "助教") ||
-        (selectedRole === "組長" && (m.role === "組長" || m.role === "副組長")) ||
-        (selectedRole === "學員" && (m.role === "學員" || !m.role));
+      const matchRole = matchesRole(m.role, selectedRole);
 
       const query = searchQuery.toLowerCase().trim();
       const matchQuery =
@@ -64,7 +113,7 @@ export function DirectoryView() {
 
       return matchInd && matchGrp && matchRole && matchQuery;
     });
-  }, [members, selectedIndustry, selectedGroup, selectedRole, searchQuery]);
+  }, [members, selectedIndustry, selectedGroup, selectedRole, searchQuery, matchesRole]);
 
   const handleLineClick = (e: React.MouseEvent, member: UserProfile) => {
     e.stopPropagation();
@@ -113,34 +162,37 @@ export function DirectoryView() {
             </span>
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {[
-              { id: "全部", label: "全部成員", count: members.length },
-              { id: "講師", label: "👨‍🏫 授課導師", count: members.filter((m) => m.role === "講師").length },
-              { id: "助教", label: "💼 隨班助教", count: members.filter((m) => m.role === "助教").length },
-              { id: "組長", label: "🌟 組長幹部", count: members.filter((m) => m.role === "組長" || m.role === "副組長").length },
-              { id: "學員", label: "👤 一般學員", count: members.filter((m) => m.role === "學員" || !m.role).length },
-            ].map(({ id, label, count }) => (
-              <button
-                key={id}
-                onClick={() => setSelectedRole(id)}
-                className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border flex items-center gap-1.5 ${
-                  selectedRole === id
-                    ? id === "講師"
-                      ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500 font-bold shadow-xs ring-1 ring-amber-400/50"
-                      : id === "助教"
-                      ? "bg-sky-500/20 text-sky-800 dark:text-sky-200 border-sky-500 font-bold shadow-xs ring-1 ring-sky-400/50"
-                      : "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-bold shadow-xs"
-                    : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                <span>{label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  selectedRole === id ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                }`}>
-                  {count}
-                </span>
-              </button>
-            ))}
+            {roleFilters.map(({ id, label, count }) => {
+              const isSelected = selectedRole === id;
+              const isLead = id.includes("導師") || id.includes("講師") || id.includes("評審") || id.includes("VIP");
+              const isTA = id.includes("助教") || id.includes("顧問");
+              const isLeader = id.includes("組長") || id.includes("幹部") || id.includes("隊長") || id.includes("會長");
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedRole(id)}
+                  className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border flex items-center gap-1.5 ${
+                    isSelected
+                      ? isLead
+                        ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500 font-bold shadow-xs ring-1 ring-amber-400/50"
+                        : isTA
+                        ? "bg-sky-500/20 text-sky-800 dark:text-sky-200 border-sky-500 font-bold shadow-xs ring-1 ring-sky-400/50"
+                        : isLeader
+                        ? "bg-indigo-500/20 text-indigo-800 dark:text-indigo-200 border-indigo-500 font-bold shadow-xs ring-1 ring-indigo-400/50"
+                        : "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-bold shadow-xs"
+                      : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isSelected ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -213,17 +265,18 @@ export function DirectoryView() {
           {filteredMembers.map((member) => {
             const hasNote = !!privateNotes[member.id];
             const isSelf = member.isCurrentUser;
-            const isTeacher = member.role === "講師";
-            const isTA = member.role === "助教";
+            const isLeaderRole = member.role?.includes("導師") || member.role?.includes("講師") || member.role?.includes("講者") || member.role?.includes("評審");
+            const isSubRole = member.role?.includes("助教") || member.role?.includes("顧問");
+            const isGroupLead = member.role?.includes("組長") || member.role?.includes("副組長") || member.role?.includes("隊長") || member.role?.includes("會長") || member.role?.includes("幹部");
 
             return (
               <div
                 key={member.id}
                 onClick={() => openDrawer(member)}
                 className={`p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 cursor-pointer group shadow-xs hover:shadow-md ${
-                  isTeacher
+                  isLeaderRole
                     ? "bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 border-amber-400/60 ring-1 ring-amber-400/30"
-                    : isTA
+                    : isSubRole
                     ? "bg-gradient-to-br from-sky-500/10 via-white to-sky-500/5 dark:from-sky-950/20 dark:via-slate-900 dark:to-slate-900 border-sky-400/60 ring-1 ring-sky-400/30"
                     : isSelf
                     ? "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-500/70 ring-1 ring-emerald-500/50"
@@ -240,9 +293,9 @@ export function DirectoryView() {
                           setPreviewMember(member);
                         }}
                         className={`w-16 h-16 sm:w-18 sm:h-18 rounded-2xl flex items-center justify-center font-bold text-2xl shrink-0 group-hover:scale-102 transition shadow-md overflow-hidden relative cursor-zoom-in group/avatar ${
-                          isTeacher
+                          isLeaderRole
                             ? "bg-amber-100 text-amber-800 border-2 border-amber-400"
-                            : isTA
+                            : isSubRole
                             ? "bg-sky-100 text-sky-800 border-2 border-sky-400"
                             : "bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border-2 border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400"
                         }`}
@@ -270,22 +323,22 @@ export function DirectoryView() {
                               我
                             </span>
                           )}
-                          {isTeacher && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/50 font-bold flex items-center gap-1 shadow-xs">
-                              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span>授課導師</span>
-                            </span>
-                          )}
-                          {isTA && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-900 dark:text-sky-200 border border-sky-500/40 font-bold flex items-center gap-1 shadow-xs">
-                              <Briefcase className="w-3 h-3 text-sky-600 dark:text-sky-400" />
-                              <span>隨班助教</span>
-                            </span>
-                          )}
-                          {member.role === "組長" && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-medium flex items-center gap-0.5 border border-amber-200 dark:border-amber-500/30">
-                              <Award className="w-2.5 h-2.5" />
-                              組長
+                          {member.role && member.role !== "學員" && member.role !== "一般學員" && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-xs border ${
+                              isLeaderRole
+                                ? "bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-500/50"
+                                : isSubRole
+                                ? "bg-sky-500/20 text-sky-900 dark:text-sky-200 border-sky-500/40"
+                                : isGroupLead
+                                ? "bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 border-indigo-500/40"
+                                : "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30"
+                            }`}>
+                              <span>
+                                {isLeaderRole ? "👨‍🏫" : isSubRole ? "💼" : isGroupLead ? "🌟" : "👤"}
+                              </span>
+                              <span>
+                                {member.role === "講師" ? "授課導師" : member.role === "助教" ? "隨班助教" : member.role}
+                              </span>
                             </span>
                           )}
                         </div>

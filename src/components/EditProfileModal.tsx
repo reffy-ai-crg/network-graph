@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
@@ -24,7 +24,7 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
-  const { currentUser, updateCurrentUserProfile, showToast } = useNetwork();
+  const { currentUser, updateCurrentUserProfile, showToast, currentEvent } = useNetwork();
 
   const [name, setName] = useState(currentUser.name);
   const [company, setCompany] = useState(currentUser.company);
@@ -44,10 +44,32 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
 
   // 所屬組別與班級身分
   const [group, setGroup] = useState<number>(currentUser.group || 9);
-  const [role, setRole] = useState<string>(currentUser.role || "學員");
+  const [role, setRole] = useState<string>(currentUser.role || "一般學員");
 
   const [offer, setOffer] = useState(currentUser.offer);
   const [seek, setSeek] = useState(currentUser.seek);
+
+  const availableRoles = useMemo(() => {
+    const defaultRoles = currentEvent?.customRoles && currentEvent.customRoles.length > 0
+      ? currentEvent.customRoles
+      : ["授課導師", "隨班助教", "組長幹部", "一般學員"];
+    
+    const list = [...defaultRoles];
+    if (role && !list.includes(role)) {
+      list.push(role);
+    }
+    return list;
+  }, [currentEvent?.customRoles, role]);
+
+  const getRoleOptionIcon = (roleName: string) => {
+    if (roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者")) return "👨‍🏫 ";
+    if (roleName.includes("助教")) return "💼 ";
+    if (roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") || roleName.includes("幹部")) return "🌟 ";
+    if (roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") || roleName.includes("顧問")) return "👑 ";
+    if (roleName.includes("投資") || roleName.includes("創投") || roleName.includes("天使")) return "💎 ";
+    if (roleName.includes("參賽") || roleName.includes("黑客") || roleName.includes("選手")) return "🚀 ";
+    return "👤 ";
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -335,26 +357,24 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             </div>
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-                班級身分
+                活動身分角色
               </label>
               <select
                 value={role}
                 onChange={(e) => {
                   const newRole = e.target.value;
                   setRole(newRole);
-                  if ((newRole === "講師" || newRole === "助教") && group > 0) {
+                  if ((newRole.includes("導師") || newRole.includes("講師") || newRole.includes("助教")) && group > 0) {
                     setGroup(0); // 自動切換為巡迴指導
                   }
                 }}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
               >
-                <option value="學員">👤 學員</option>
-                <option value="組長">🌟 組長</option>
-                <option value="副組長">⭐ 副組長</option>
-                <option value="助教">💼 隨班助教</option>
-                <option value="講師">👨‍🏫 授課導師</option>
-                <option value="活動籌備">📋 活動籌備</option>
-                <option value="貴賓">👑 特邀貴賓</option>
+                {availableRoles.map((r) => (
+                  <option key={r} value={r}>
+                    {getRoleOptionIcon(r)}{r}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

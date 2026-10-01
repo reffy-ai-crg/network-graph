@@ -15,6 +15,45 @@ export const INDUSTRIES: IndustryType[] = [
   "其他多元領域"
 ];
 
+export interface ScenarioTemplate {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  defaultRoles: string[];
+}
+
+export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
+  {
+    id: "training",
+    name: "培訓研修班 (如 AIA / EMBA)",
+    icon: "🎓",
+    description: "適合學術與技術實戰課程，強調師長、助教與專案小組",
+    defaultRoles: ["授課導師", "隨班助教", "組長幹部", "一般學員"],
+  },
+  {
+    id: "networking",
+    name: "商務人脈社團 (如 BNI / 扶輪社)",
+    icon: "🤝",
+    description: "適合商業引薦與商會聚會，強調幹部階層與貴賓引薦",
+    defaultRoles: ["分會會長", "副會長", "執委幹部", "正式會員", "受邀貴賓"],
+  },
+  {
+    id: "conference",
+    name: "國際高峰論壇 / 年會",
+    icon: "🎤",
+    description: "適合大型會展，凸顯重量級講者、展商與大會志工",
+    defaultRoles: ["特邀講者", "VIP 貴賓", "贊助廠商", "大會工作人員", "一般聽眾"],
+  },
+  {
+    id: "hackathon",
+    name: "新創黑客松 / Demo Day",
+    icon: "💡",
+    description: "適合新創競賽與媒合，強調評審、創投導師與戰隊隊員",
+    defaultRoles: ["客座評審", "天使投資人", "技術導師", "戰隊隊長", "參賽隊員"],
+  },
+];
+
 export const INITIAL_EVENTS: EventSpace[] = [
   {
     id: "aia-12",
@@ -22,11 +61,12 @@ export const INITIAL_EVENTS: EventSpace[] = [
     title: "台灣人工智慧學校 (AIA)",
     cohort: "經理人班第12期",
     date: "2026/03",
-    totalMembers: 52,
+    totalMembers: 55,
     totalGroups: 10,
     userRole: "第 9 組 學員",
     isCurrent: true,
     isDemoMode: true,
+    customRoles: ["授課導師", "隨班助教", "組長幹部", "一般學員"],
   },
   {
     id: "genai-workshop",
@@ -39,6 +79,7 @@ export const INITIAL_EVENTS: EventSpace[] = [
     userRole: "自由分組",
     isCurrent: false,
     isDemoMode: false,
+    customRoles: ["客座導師", "隨班助教", "專案隊長", "實戰學員"],
   },
   {
     id: "aws-summit",
@@ -51,6 +92,7 @@ export const INITIAL_EVENTS: EventSpace[] = [
     userRole: "VIP 嘉賓",
     isCurrent: false,
     isDemoMode: false,
+    customRoles: ["特邀講者", "VIP 貴賓", "贊助廠商", "工作人員", "一般聽眾"],
   }
 ];
 

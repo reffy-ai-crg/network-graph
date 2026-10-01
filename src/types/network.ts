@@ -52,6 +52,7 @@ export interface EventSpace {
   isCurrent: boolean;
   passcode?: string;
   isDemoMode?: boolean;
+  customRoles?: string[];
 }
 
 export interface PrivateNote {

@@ -118,8 +118,10 @@ export function GraphView() {
         targetY = cy + Math.sin(groupAngle) * radius + (Math.random() - 0.5) * 60;
       }
 
-      // 導師與助教節點半徑較大且具尊榮度
-      const radius = m.role === "講師" ? 19 : m.role === "助教" ? 16 : m.isCurrentUser ? 18 : 14;
+      // 導師、評審、助教與幹部節點半徑適應度與尊榮感
+      const isLeaderRole = m.role?.includes("導師") || m.role?.includes("講師") || m.role?.includes("評審") || m.role?.includes("VIP") || m.role?.includes("講者");
+      const isSubLeaderRole = m.role?.includes("助教") || m.role?.includes("組長") || m.role?.includes("幹部") || m.role?.includes("會長");
+      const radius = isLeaderRole ? 19 : isSubLeaderRole ? 16 : m.isCurrentUser ? 18 : 14;
 
       return {
         id: m.id,

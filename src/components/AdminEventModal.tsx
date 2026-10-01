@@ -17,8 +17,10 @@ import {
   Lock,
   KeyRound,
   Layers,
-  ShieldAlert
+  ShieldAlert,
+  Crown
 } from "lucide-react";
+import { SCENARIO_TEMPLATES } from "../lib/mockData";
 
 interface AdminEventModalProps {
   isOpen: boolean;
@@ -59,6 +61,10 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const [date, setDate] = useState(currentEvent.date || "2026/03");
   const [passcode, setPasscode] = useState(currentEvent.passcode || "");
   const [isDemo, setIsDemo] = useState(currentEvent.isDemoMode ?? true);
+  const [customRoles, setCustomRoles] = useState<string[]>(
+    currentEvent.customRoles || ["授課導師", "隨班助教", "組長幹部", "一般學員"]
+  );
+  const [roleInput, setRoleInput] = useState("");
 
   // 建立新活動表單狀態
   const [newTitle, setNewTitle] = useState("");
@@ -66,6 +72,10 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const [newSlug, setNewSlug] = useState("");
   const [newGroups, setNewGroups] = useState(10);
   const [newPasscode, setNewPasscode] = useState("");
+  const [newRoles, setNewRoles] = useState<string[]>([
+    "授課導師", "隨班助教", "組長幹部", "一般學員"
+  ]);
+  const [newRoleInput, setNewRoleInput] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -76,6 +86,9 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       setDate(currentEvent.date || "2026/03");
       setPasscode(currentEvent.passcode || "");
       setIsDemo(currentEvent.isDemoMode ?? true);
+      setCustomRoles(currentEvent.customRoles || ["授課導師", "隨班助教", "組長幹部", "一般學員"]);
+      setRoleInput("");
+      setNewRoleInput("");
       setPinInput("");
       setPinError(false);
     }
@@ -123,7 +136,9 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       date,
       passcode: passcode.trim(),
       isDemoMode: isDemo,
+      customRoles: customRoles,
     });
+    showToast("活動設定與專屬身分角色已儲存！");
     onClose();
   };
 
@@ -142,6 +157,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
       date: new Date().toISOString().slice(0, 7).replace("-", "/"),
       passcode: newPasscode.trim(),
       isDemoMode: false,
+      customRoles: newRoles,
     });
 
     setNewTitle("");
@@ -395,6 +411,107 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                         />
                       </div>
                     </div>
+
+                    {/* 活動專屬身分角色自訂與場景模板 */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-amber-500" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-sm">
+                            活動專屬身分角色設定
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400">共 {customRoles.length} 種身分</span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        自訂本活動房提供給學員選擇的身分角色。支援一鍵套用情境模板，亦可自行新增或刪減角色！
+                      </p>
+
+                      {/* 場景模板快捷按鈕 */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">✨ 一鍵套用場合模板：</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {SCENARIO_TEMPLATES.map((tmpl) => (
+                            <button
+                              key={tmpl.id}
+                              type="button"
+                              onClick={() => {
+                                setCustomRoles([...tmpl.defaultRoles]);
+                                showToast(`已套用【${tmpl.name}】身分模板！`);
+                              }}
+                              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <span className="text-sm shrink-0">{tmpl.icon}</span>
+                              <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200 truncate">{tmpl.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 啟用的角色標籤膠囊清單 */}
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">🏷️ 本房間生效的身分角色（點擊 × 可移除）：</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {customRoles.map((roleName) => (
+                            <span
+                              key={roleName}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold shadow-xs"
+                            >
+                              <span>
+                                {roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者") ? "👨‍🏫 " :
+                                 roleName.includes("助教") ? "💼 " :
+                                 roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") ? "🌟 " :
+                                 roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") ? "👑 " : "👤 "}
+                                {roleName}
+                              </span>
+                              {customRoles.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomRoles(customRoles.filter((r) => r !== roleName))}
+                                  className="text-slate-400 hover:text-rose-500 ml-0.5 rounded-full"
+                                  title="刪除此身分"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 新增自訂身分輸入 */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={roleInput}
+                          onChange={(e) => setRoleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (roleInput.trim() && !customRoles.includes(roleInput.trim())) {
+                                setCustomRoles([...customRoles, roleInput.trim()]);
+                                setRoleInput("");
+                              }
+                            }
+                          }}
+                          placeholder="輸入自訂身分名稱（如：天使投資人、評審）"
+                          className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (roleInput.trim() && !customRoles.includes(roleInput.trim())) {
+                              setCustomRoles([...customRoles, roleInput.trim()]);
+                              setRoleInput("");
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shrink-0 transition"
+                        >
+                          + 新增
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
@@ -485,6 +602,103 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                         placeholder="留空表示免密碼"
                         className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
                       />
+                    </div>
+                  </div>
+
+                  {/* 活動專屬身分角色設定 */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-amber-500" />
+                        <label className="text-slate-800 dark:text-slate-200 font-bold text-xs">活動專屬身分角色設定</label>
+                      </div>
+                      <span className="text-[10px] text-slate-400">自訂此房間開放的身分</span>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80 space-y-2.5">
+                      {/* 場景模板快捷按鈕 */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">✨ 一鍵套用場合模板：</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {SCENARIO_TEMPLATES.map((tmpl) => (
+                            <button
+                              key={tmpl.id}
+                              type="button"
+                              onClick={() => {
+                                setNewRoles([...tmpl.defaultRoles]);
+                                showToast(`已為新活動套用【${tmpl.name}】身分模板！`);
+                              }}
+                              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <span className="text-sm shrink-0">{tmpl.icon}</span>
+                              <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200 truncate">{tmpl.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 啟用的角色標籤膠囊清單 */}
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">🏷️ 新房間的身分角色（點擊 × 可移除）：</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {newRoles.map((roleName) => (
+                            <span
+                              key={roleName}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold shadow-xs"
+                            >
+                              <span>
+                                {roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者") ? "👨‍🏫 " :
+                                 roleName.includes("助教") ? "💼 " :
+                                 roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") ? "🌟 " :
+                                 roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") ? "👑 " : "👤 "}
+                                {roleName}
+                              </span>
+                              {newRoles.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setNewRoles(newRoles.filter((r) => r !== roleName))}
+                                  className="text-slate-400 hover:text-rose-500 ml-0.5 rounded-full"
+                                  title="刪除此身分"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 新增自訂身分輸入 */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={newRoleInput}
+                          onChange={(e) => setNewRoleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (newRoleInput.trim() && !newRoles.includes(newRoleInput.trim())) {
+                                setNewRoles([...newRoles, newRoleInput.trim()]);
+                                setNewRoleInput("");
+                              }
+                            }
+                          }}
+                          placeholder="輸入自訂身分名稱（如：天使投資人、評審）"
+                          className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newRoleInput.trim() && !newRoles.includes(newRoleInput.trim())) {
+                              setNewRoles([...newRoles, newRoleInput.trim()]);
+                              setNewRoleInput("");
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shrink-0 transition"
+                        >
+                          + 新增
+                        </button>
+                      </div>
                     </div>
                   </div>
 

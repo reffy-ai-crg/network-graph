@@ -389,14 +389,18 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                   {displayMember.name}
                 </h3>
                 <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
-                  displayMember.role === "講師"
+                  displayMember.role?.includes("導師") || displayMember.role?.includes("講師") || displayMember.role?.includes("講者") || displayMember.role?.includes("評審")
                     ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
-                    : displayMember.role === "助教"
+                    : displayMember.role?.includes("助教") || displayMember.role?.includes("顧問")
                     ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40"
+                    : displayMember.role?.includes("組長") || displayMember.role?.includes("副組長") || displayMember.role?.includes("隊長") || displayMember.role?.includes("會長") || displayMember.role?.includes("幹部")
+                    ? "bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-500/40"
                     : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30"
                 }`}>
                   {displayMember.group === 0 ? "🎓 巡迴指導" : `第 ${displayMember.group} 組`}
-                  {displayMember.role && displayMember.role !== "學員" ? ` · ${displayMember.role === "講師" ? "授課導師" : displayMember.role === "助教" ? "隨班助教" : displayMember.role}` : ""}
+                  {displayMember.role && displayMember.role !== "學員" && displayMember.role !== "一般學員"
+                    ? ` · ${displayMember.role === "講師" ? "授課導師" : displayMember.role === "助教" ? "隨班助教" : displayMember.role}`
+                    : ""}
                 </span>
                 {isSelf && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-bold">
