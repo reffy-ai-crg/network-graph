@@ -114,7 +114,24 @@ export function DirectoryView() {
 
         {/* 組別過濾 */}
         <div className="space-y-1.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
+            {/* 1~50 組快速下拉跳轉 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400">快速選組：</span>
+              <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-emerald-500"
+              >
+                {groups.map((grp) => (
+                  <option key={grp} value={grp}>
+                    {grp}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
             {groups.map((grp) => (
               <button

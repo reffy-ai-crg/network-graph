@@ -325,7 +325,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 onChange={(e) => setGroup(Number(e.target.value))}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
               >
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((g) => (
+                {Array.from({ length: 50 }, (_, i) => i + 1).map((g) => (
                   <option key={g} value={g}>
                     第 {g} 組 {g === 9 ? "🌟" : ""}
                   </option>

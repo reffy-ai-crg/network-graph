@@ -25,6 +25,15 @@ const GROUP_COLORS = [
   "#0284c7", "#ca8a04", "#9333ea", "#475569"
 ];
 
+function getGroupColor(group: number): string {
+  if (group >= 1 && group <= GROUP_COLORS.length) {
+    return GROUP_COLORS[group - 1];
+  }
+  // 為第 17~50+ 組計算黃金角均勻色相分佈，確保每一組均具備高飽和與辨識度色彩
+  const hue = ((group - 1) * 137.5) % 360;
+  return `hsl(${Math.round(hue)}, 75%, 48%)`;
+}
+
 const INDUSTRY_COLORS: Record<IndustryType, string> = {
   "半導體與硬體": "#f59e0b",
   "軟體與雲端運算": "#0ea5e9",
@@ -107,7 +116,7 @@ export function GraphView() {
         vx: 0,
         vy: 0,
         radius: m.isCurrentUser ? 18 : 14,
-        groupColor: GROUP_COLORS[(m.group - 1) % GROUP_COLORS.length],
+        groupColor: getGroupColor(m.group),
         industryColor: getIndustryColor(m.industry),
       };
     });
