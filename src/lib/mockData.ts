@@ -94,6 +94,21 @@ export const SAMPLE_CARD_MSFT = "data:image/svg+xml;utf8," + encodeURIComponent(
 </svg>
 `);
 
+export const SAMPLE_AVATARS = [
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
+];
+
 export const CURRENT_USER_DEFAULT: UserProfile = {
   id: "user-kevin",
   name: "陳志豪 (Kevin)",
@@ -103,6 +118,7 @@ export const CURRENT_USER_DEFAULT: UserProfile = {
   industry: "半導體與硬體",
   group: 9,
   role: "學員",
+  avatarUrl: SAMPLE_AVATARS[0],
   businessCardUrl: SAMPLE_CARD_TSMC,
   mediaType: "card",
   lineId: "kevin_ai_99",
@@ -196,6 +212,7 @@ export function generateMockMembers(currentUser: UserProfile): UserProfile[] {
       linkedinUrl: `https://linkedin.com/in/user-${i}`,
       offer: offerList[i % offerList.length],
       seek: seekList[i % seekList.length],
+      avatarUrl: SAMPLE_AVATARS[i % SAMPLE_AVATARS.length],
       businessCardUrl: i % 4 === 0 ? SAMPLE_CARD_TSMC : i % 5 === 0 ? SAMPLE_CARD_MSFT : undefined,
       mediaType: (i % 4 === 0 || i % 5 === 0) ? "card" : "avatar",
       isCurrentUser: false

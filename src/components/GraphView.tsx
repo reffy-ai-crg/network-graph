@@ -63,6 +63,7 @@ export function GraphView() {
 
   const [clusterMode, setClusterMode] = useState<"group" | "industry">("group");
   const [highlightedIndustry, setHighlightedIndustry] = useState<string>("all");
+  const [hoveredNodeInfo, setHoveredNodeInfo] = useState<{ member: UserProfile; x: number; y: number } | null>(null);
 
   const allIndustries = React.useMemo(() => {
     const customSet = new Set<string>();
@@ -361,7 +362,14 @@ export function GraphView() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const pos = getCanvasPos(e.clientX, e.clientY);
-    hoveredNodeRef.current = findNodeAt(pos);
+    const node = findNodeAt(pos);
+    hoveredNodeRef.current = node;
+
+    if (node && !isPanningRef.current && !draggedNodeRef.current) {
+      setHoveredNodeInfo({ member: node.member, x: e.clientX, y: e.clientY });
+    } else {
+      setHoveredNodeInfo(null);
+    }
 
     if (draggedNodeRef.current) {
       draggedNodeRef.current.x = pos.x;
@@ -505,12 +513,43 @@ export function GraphView() {
         💡 滑鼠/手指拖曳節點可互動 • 點擊同學頭像滑出詳細名片卡
       </div>
 
+      {/* 懸浮節點時放大的即時照片與資料浮動卡片 (Hover Magnified Photo Preview) */}
+      {hoveredNodeInfo && (
+        <div
+          className="fixed pointer-events-none z-30 transform -translate-x-1/2 -translate-y-full mb-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md flex items-center gap-3 animate-in fade-in zoom-in-95 duration-150"
+          style={{ left: hoveredNodeInfo.x, top: hoveredNodeInfo.y - 12 }}
+        >
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center font-bold text-lg text-emerald-600 dark:text-emerald-400 shadow-xs">
+            {hoveredNodeInfo.member.avatarUrl ? (
+              <img src={hoveredNodeInfo.member.avatarUrl} alt={hoveredNodeInfo.member.name} className="w-full h-full object-cover" />
+            ) : (
+              <span>{hoveredNodeInfo.member.surname}</span>
+            )}
+          </div>
+          <div className="space-y-0.5 pr-1 text-left">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{hoveredNodeInfo.member.name}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-500/30">
+                第 {hoveredNodeInfo.member.group} 組
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-tight">
+              {hoveredNodeInfo.member.company}
+            </p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              {hoveredNodeInfo.member.title}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Canvas 主體 */}
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={() => setHoveredNodeInfo(null)}
         onClick={handleClick}
         onWheel={handleWheel}
         className="w-full h-full cursor-grab active:cursor-grabbing"

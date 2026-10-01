@@ -43,7 +43,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
 
   const [noteContent, setNoteContent] = useState("");
   const [showSavedFeedback, setShowSavedFeedback] = useState(false);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; type: "card" | "avatar" } | null>(null);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -54,7 +54,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
     if (selectedMember) {
       setNoteContent(privateNotes[selectedMember.id] || "");
       setShowSavedFeedback(false);
-      setIsLightboxOpen(false);
+      setLightboxImage(null);
     }
   }, [selectedMember, privateNotes]);
 
@@ -106,6 +106,16 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
     } finally {
       setIsGeneratingCard(false);
     }
+  };
+
+  // 下載個人形象照片
+  const handleDownloadPhoto = () => {
+    if (!displayMember.avatarUrl) return;
+    downloadImage(
+      displayMember.avatarUrl,
+      `${displayMember.name}_個人照片.jpg`
+    );
+    showToast(`已成功下載 ${displayMember.name} 的個人照片！✓`);
   };
 
   // 轉發 / 分享名片（LINE 與原生分享）
@@ -252,7 +262,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
               </div>
 
               <div 
-                onClick={() => setIsLightboxOpen(true)}
+                onClick={() => setLightboxImage({ url: displayMember.businessCardUrl!, title: `${displayMember.name} 的實體名片`, type: "card" })}
                 className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 cursor-pointer shadow-md group"
               >
                 <img
@@ -262,7 +272,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs">
                   <ZoomIn className="w-4 h-4" />
-                  <span>點擊全螢幕放大</span>
+                  <span>點擊全螢幕放大名片</span>
                 </div>
               </div>
             </div>
@@ -284,28 +294,91 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
             </div>
           ) : null}
 
+          {/* 個人形象大照展示區塊 */}
+          {displayMember.avatarUrl ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>個人形象照片 / 生活照</span>
+                </span>
+                <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                  <ZoomIn className="w-3 h-3" />
+                  <span>點擊照片放大全螢幕</span>
+                </span>
+              </div>
+
+              <div 
+                onClick={() => setLightboxImage({ url: displayMember.avatarUrl!, title: `${displayMember.name} 的個人照片`, type: "avatar" })}
+                className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 cursor-pointer shadow-md group h-64 sm:h-72 flex items-center justify-center"
+              >
+                <img
+                  src={displayMember.avatarUrl}
+                  alt={`${displayMember.name} 的個人照片`}
+                  className="w-full h-full object-contain transition group-hover:scale-102"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs">
+                  <ZoomIn className="w-4 h-4" />
+                  <span>點擊全螢幕放大照片</span>
+                </div>
+              </div>
+            </div>
+          ) : isSelf ? (
+            <div 
+              onClick={() => avatarInputRef.current?.click()}
+              className="border-2 border-dashed border-emerald-500/50 hover:border-emerald-600 bg-emerald-50/20 dark:bg-emerald-950/20 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-1.5 group"
+            >
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition shadow-xs">
+                <Camera className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                點此拍照或上傳您的個人形象照
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                建議上傳清楚生活照或專業肖像，方便全班同學認得您！
+              </span>
+            </div>
+          ) : null}
+
           {/* 基本身分與頭像照片 */}
           <div className="flex items-start gap-4">
             <div 
-              onClick={() => isSelf && avatarInputRef.current?.click()}
-              className={`w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-2xl shadow-lg shrink-0 border border-emerald-400/30 relative ${
-                isSelf ? "cursor-pointer group" : ""
-              }`}
-              title={isSelf ? "點擊更換個人形象照" : undefined}
+              onClick={() => {
+                if (displayMember.avatarUrl) {
+                  setLightboxImage({ url: displayMember.avatarUrl, title: `${displayMember.name} 的個人照片`, type: "avatar" });
+                } else if (isSelf) {
+                  avatarInputRef.current?.click();
+                }
+              }}
+              className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-3xl shadow-lg shrink-0 border-2 border-emerald-400/40 relative cursor-pointer group"
+              title={displayMember.avatarUrl ? "點擊放大查看大圖" : isSelf ? "點擊上傳個人形象照" : undefined}
             >
               {displayMember.avatarUrl ? (
                 <img 
                   src={displayMember.avatarUrl} 
                   alt={displayMember.name} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover transition group-hover:scale-105" 
                 />
               ) : (
                 <span>{displayMember.surname}</span>
               )}
 
-              {isSelf && (
+              {/* 放大鏡提示 */}
+              {displayMember.avatarUrl && (
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
-                  <Camera className="w-5 h-5" />
+                  <ZoomIn className="w-6 h-6 drop-shadow" />
+                </div>
+              )}
+
+              {isSelf && !displayMember.avatarUrl && (
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
+                  <Camera className="w-6 h-6" />
+                </div>
+              )}
+
+              {displayMember.avatarUrl && (
+                <div className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-xs rounded-md p-0.5 text-white/90 shadow-xs">
+                  <ZoomIn className="w-3 h-3" />
                 </div>
               )}
             </div>
@@ -485,48 +558,74 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
         onChange={handleCardUpload}
       />
 
-      {/* 名片全螢幕燈箱放大 Modal */}
-      {isLightboxOpen && displayMember.businessCardUrl && (
+      {/* 全螢幕大圖燈箱放大 Modal (名片或照片通用) */}
+      {lightboxImage && (
         <div 
-          onClick={() => setIsLightboxOpen(false)}
-          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setLightboxImage(null)}
+          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
         >
           <div className="relative max-w-2xl w-full flex flex-col items-center gap-4">
-            <div className="w-full flex items-center justify-between text-white pb-2">
+            <div className="w-full flex items-center justify-between text-white pb-2 border-b border-slate-800">
               <span className="text-sm font-bold flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-emerald-400" />
-                <span>{displayMember.name} 的實體名片全圖</span>
+                {lightboxImage.type === "card" ? (
+                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Camera className="w-4 h-4 text-emerald-400" />
+                )}
+                <span>{lightboxImage.title}</span>
               </span>
               <button 
-                onClick={() => setIsLightboxOpen(false)}
+                onClick={() => setLightboxImage(null)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white transition"
+                title="關閉"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             <img
-              src={displayMember.businessCardUrl}
-              alt="名片放大"
+              src={lightboxImage.url}
+              alt={lightboxImage.title}
               className="w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-slate-700 bg-slate-950"
               onClick={(e) => e.stopPropagation()}
             />
 
             <div className="flex items-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={handleDownloadCard}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
-              >
-                <Download className="w-4 h-4" />
-                <span>儲存名片至相簿</span>
-              </button>
-              <button
-                onClick={handleShareCard}
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>轉發至 LINE</span>
-              </button>
+              {lightboxImage.type === "card" ? (
+                <>
+                  <button
+                    onClick={handleDownloadCard}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>儲存名片至相簿</span>
+                  </button>
+                  <button
+                    onClick={handleShareCard}
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>轉發至 LINE</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleDownloadPhoto}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>儲存原圖照片至相簿</span>
+                  </button>
+                  <button
+                    onClick={handleShareCard}
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>轉發名片資訊至 LINE</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

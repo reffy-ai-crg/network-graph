@@ -4,13 +4,14 @@ import React, { useState, useMemo } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
-import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard } from "lucide-react";
+import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard, ZoomIn } from "lucide-react";
 
 export function DirectoryView() {
   const { members, openDrawer, privateNotes, showToast, currentEvent } = useNetwork();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("全部");
   const [selectedGroup, setSelectedGroup] = useState<string>("全部");
+  const [previewMember, setPreviewMember] = useState<UserProfile | null>(null);
 
   const groups = useMemo(() => {
     const groupNums = new Set<number>();
@@ -152,13 +153,26 @@ export function DirectoryView() {
                 <div>
                   {/* 頂部姓名與所屬企業 */}
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-base text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition shadow-inner overflow-hidden">
+                    <div className="flex items-center space-x-3.5">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewMember(member);
+                        }}
+                        className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-400 flex items-center justify-center font-bold text-2xl text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-102 transition shadow-md overflow-hidden relative cursor-zoom-in group/avatar"
+                        title="點擊放大查看大頭貼照片"
+                      >
                         {member.avatarUrl ? (
                           <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
                         ) : (
-                          member.surname
+                          <span>{member.surname}</span>
                         )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition flex items-center justify-center text-white">
+                          <ZoomIn className="w-5 h-5 drop-shadow" />
+                        </div>
+                        <div className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-xs rounded-md p-0.5 text-white/90 shadow-xs">
+                          <ZoomIn className="w-2.5 h-2.5" />
+                        </div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
@@ -269,6 +283,76 @@ export function DirectoryView() {
           >
             重設所有篩選條件
           </button>
+        </div>
+      )}
+
+      {/* 外面直接點擊照片的大圖放大燈箱 (Photo Zoom Lightbox) */}
+      {previewMember && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewMember(null)}
+        >
+          <div
+            className="relative max-w-md w-full bg-slate-900 border border-slate-700/80 rounded-3xl p-5 shadow-2xl flex flex-col items-center space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 關閉按鈕 */}
+            <button
+              onClick={() => setPreviewMember(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white transition z-10"
+              title="關閉"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* 大圖展示區域 */}
+            <div className="w-full aspect-square max-h-[60vh] rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800 shadow-inner">
+              {previewMember.avatarUrl ? (
+                <img
+                  src={previewMember.avatarUrl}
+                  alt={previewMember.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-emerald-800 to-teal-700 text-white p-6 text-center">
+                  <span className="text-7xl font-black mb-2">{previewMember.surname}</span>
+                  <span className="text-xl font-bold">{previewMember.name}</span>
+                  <span className="text-sm opacity-80 mt-1">{previewMember.company}</span>
+                </div>
+              )}
+            </div>
+
+            {/* 個人資訊與快速按鈕 */}
+            <div className="w-full flex items-center justify-between text-left pt-1">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white">{previewMember.name}</h3>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                    第 {previewMember.group} 組
+                  </span>
+                  {previewMember.role && previewMember.role !== "學員" && (
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
+                      {previewMember.role}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 font-medium mt-0.5">
+                  {previewMember.company} · {previewMember.title}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  const m = previewMember;
+                  setPreviewMember(null);
+                  openDrawer(m);
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 shrink-0"
+              >
+                <span>查看完整名片</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
