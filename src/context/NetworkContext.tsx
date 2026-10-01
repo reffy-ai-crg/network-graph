@@ -77,7 +77,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("network_graph_events");
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed: EventSpace[] = JSON.parse(saved);
+          return parsed.map((e) => ({
+            ...e,
+            isDemoMode: e.slug === "aia-12" ? (e.isDemoMode ?? true) : false,
+          }));
         } catch (e) {
           console.error(e);
         }
@@ -93,11 +97,15 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed: EventSpace[] = JSON.parse(saved);
+          const sanitized = parsed.map((e) => ({
+            ...e,
+            isDemoMode: e.slug === "aia-12" ? (e.isDemoMode ?? true) : false,
+          }));
           if (activeId) {
-            const found = parsed.find((e) => e.id === activeId || e.slug === activeId);
+            const found = sanitized.find((e) => e.id === activeId || e.slug === activeId);
             if (found) return found;
           }
-          if (parsed.length > 0) return parsed[0];
+          if (sanitized.length > 0) return sanitized[0];
         } catch (e) {
           console.error(e);
         }
@@ -126,8 +134,9 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
   // 核心名冊載入函式：徹底分離「55位虛擬示範」與「純淨真實模式」
   const loadMembersForEvent = useCallback(async (targetEvent: EventSpace, user: UserProfile) => {
-    // 1. 若為示範模式（例如 第12期），載入 55 位 mock 企業主管
-    if (targetEvent.isDemoMode !== false) {
+    // 1. 若為示範模式（僅限 aia-12 經理人班第12期），載入 55 位 mock 企業主管
+    const isActuallyDemo = targetEvent.slug === "aia-12" && targetEvent.isDemoMode !== false;
+    if (isActuallyDemo) {
       setMembers(generateMockMembers(user));
       return;
     }
@@ -294,7 +303,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
             const mappedEvents: EventSpace[] = cloudEvents.map((e) => {
               const existingLocal = localEvents.find((l) => l.slug === e.slug || l.id === e.id);
               const isMatch = targetSlug ? e.slug === targetSlug : e.slug === (currentEvent.slug || "aia-12");
-              const isDemo = existingLocal?.isDemoMode ?? (e.slug === "aia-12");
+              const isDemo = e.slug === "aia-12" ? (existingLocal?.isDemoMode ?? true) : false;
 
               return {
                 id: e.id,

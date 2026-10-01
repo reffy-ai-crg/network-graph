@@ -54,6 +54,16 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 font-medium">
                   {currentEvent.cohort}
                 </span>
+                {currentEvent.isDemoMode !== false ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700/50 font-medium hidden sm:inline">
+                    示範展示模式 (55位虛擬)
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-700/50 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>純淨真實模式 (0位虛擬)</span>
+                  </span>
+                )}
                 {isCloudConnected && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />

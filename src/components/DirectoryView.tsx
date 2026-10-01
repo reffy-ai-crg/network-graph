@@ -132,6 +132,32 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
 
   return (
     <div className="flex-1 flex flex-col p-3 sm:p-5 max-w-6xl mx-auto w-full">
+      {/* 純淨真實模式專屬提示橫幅 */}
+      {currentEvent?.isDemoMode === false && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 rounded-2xl px-4 py-3 mb-3.5 text-emerald-900 dark:text-emerald-200 shadow-xs backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🌱</span>
+            <span className="leading-snug">
+              <strong>純淨真實模式已生效</strong>：本活動房不含任何 55 位虛擬示範名單，目前全體共 <strong>{members.length}</strong> 位真實成員。
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+              const inviteUrl = `${liffBaseUrl}?event=${currentEvent?.slug || "aia"}`;
+              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                navigator.clipboard.writeText(inviteUrl);
+                showToast(`已複製專屬邀請連結！可直接貼給同學：\n${inviteUrl}`);
+              }
+            }}
+            className="text-[11px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-xl text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-slate-800 transition shrink-0 shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Share2 className="w-3 h-3" />
+            <span>複製專屬邀請連結</span>
+          </button>
+        </div>
+      )}
+
       {/* 搜尋與複合過濾器 */}
       <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 mb-4 space-y-3 shadow-xs dark:shadow-md backdrop-blur-sm transition-colors">
         {/* 關鍵字搜尋 */}
