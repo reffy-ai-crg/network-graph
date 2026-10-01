@@ -87,10 +87,10 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.remove("dark");
       }
 
-      const savedPreset = localStorage.getItem("network_graph_theme_preset") as ThemePreset | null;
-      const initialPreset = savedPreset || "blue";
+      const initialPreset: ThemePreset = "blue";
       setThemePresetState(initialPreset);
       document.documentElement.setAttribute("data-theme-preset", initialPreset);
+      localStorage.setItem("network_graph_theme_preset", "blue");
 
       const savedPin = localStorage.getItem("network_graph_admin_pin");
       if (savedPin) setAdminPinState(savedPin);
