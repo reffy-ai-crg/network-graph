@@ -27,12 +27,17 @@ interface NetworkContextType {
   showToast: (msg: string) => void;
   isCloudConnected: boolean;
   theme: "light" | "dark";
+  setTheme: (t: "light" | "dark") => void;
   toggleTheme: () => void;
+  themePreset: ThemePreset;
+  setThemePreset: (preset: ThemePreset) => void;
   isAdminUnlocked: boolean;
   unlockAdmin: (pin: string) => boolean;
   adminPin: string;
   updateAdminPin: (newPin: string) => void;
 }
+
+export type ThemePreset = "blue" | "green" | "purple" | "mono";
 
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
@@ -65,6 +70,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [themePreset, setThemePresetState] = useState<ThemePreset>("blue");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [adminPin, setAdminPinState] = useState("888888");
 
@@ -80,6 +86,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       } else {
         document.documentElement.classList.remove("dark");
       }
+
+      const savedPreset = localStorage.getItem("network_graph_theme_preset") as ThemePreset | null;
+      const initialPreset = savedPreset || "blue";
+      setThemePresetState(initialPreset);
+      document.documentElement.setAttribute("data-theme-preset", initialPreset);
 
       const savedPin = localStorage.getItem("network_graph_admin_pin");
       if (savedPin) setAdminPinState(savedPin);
@@ -399,6 +410,33 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const setThemeExplicit = (t: "light" | "dark") => {
+    setTheme(t);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("network_graph_theme", t);
+      if (t === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  };
+
+  const setThemePreset = (preset: ThemePreset) => {
+    setThemePresetState(preset);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("network_graph_theme_preset", preset);
+      document.documentElement.setAttribute("data-theme-preset", preset);
+    }
+    const presetNames: Record<ThemePreset, string> = {
+      blue: "方案一：高階商務藍",
+      green: "方案二：雅緻溫潤綠",
+      purple: "方案三：未來科技紫",
+      mono: "方案四：極簡瑞士黑白",
+    };
+    showToast(`已套用【${presetNames[preset]}】風格！`);
+  };
+
   // 主辦人管理員密鑰解鎖
   const unlockAdmin = (pin: string) => {
     if (pin.trim() === adminPin) {
@@ -445,7 +483,10 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         showToast,
         isCloudConnected,
         theme,
+        setTheme: setThemeExplicit,
         toggleTheme,
+        themePreset,
+        setThemePreset,
         isAdminUnlocked,
         unlockAdmin,
         adminPin,

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useNetwork } from "../context/NetworkContext";
+import { ThemeTesterBar } from "../components/ThemeTesterBar";
 import { Header } from "../components/Header";
 import { DirectoryView } from "../components/DirectoryView";
 import { GraphView } from "../components/GraphView";
@@ -16,7 +17,10 @@ export default function Home() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <main className="min-h-screen flex flex-col bg-[var(--theme-page-bg,#f8fafc)] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      {/* 臨時淺色風格即時測試切換列 */}
+      <ThemeTesterBar />
+
       {/* 頂部導航 */}
       <Header 
         onOpenEditModal={() => setIsEditModalOpen(true)}
