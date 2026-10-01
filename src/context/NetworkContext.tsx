@@ -108,9 +108,14 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       const params = new URLSearchParams(window.location.search);
       const eventSlug = params.get("event");
       if (eventSlug) {
-        const found = events.find((e) => e.slug === eventSlug);
+        const found = events.find((e) => e.slug === eventSlug || e.id === eventSlug);
         if (found) {
           setCurrentEvent(found);
+          if (found.isDemoMode !== false) {
+            setMembers(generateMockMembers(currentUser));
+          } else {
+            setMembers([{ ...currentUser }]);
+          }
         }
       }
     }
@@ -133,23 +138,49 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
           if (!eventErr && cloudEvents && cloudEvents.length > 0) {
             setIsCloudConnected(true);
-            const mappedEvents: EventSpace[] = cloudEvents.map((e) => ({
-              id: e.id,
-              slug: e.slug,
-              title: e.name,
-              cohort: e.cohort,
-              date: e.event_date || "2026/03",
-              totalMembers: 52,
-              totalGroups: e.total_groups || 8,
-              userRole: "學員",
-              isCurrent: e.slug === (currentEvent.slug || "aia-12"),
-              passcode: e.passcode,
-              isDemoMode: true,
-            }));
+            const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+            const targetSlug = params?.get("event");
+
+            const savedLocal = typeof window !== "undefined" ? localStorage.getItem("network_graph_events") : null;
+            let localEvents: EventSpace[] = [];
+            if (savedLocal) {
+              try { localEvents = JSON.parse(savedLocal); } catch (e) { console.error(e); }
+            }
+
+            const mappedEvents: EventSpace[] = cloudEvents.map((e) => {
+              const existingLocal = localEvents.find((l) => l.slug === e.slug || l.id === e.id);
+              const isMatch = targetSlug ? e.slug === targetSlug : e.slug === (currentEvent.slug || "aia-12");
+              return {
+                id: e.id,
+                slug: e.slug,
+                title: e.name,
+                cohort: e.cohort,
+                date: e.event_date || "2026/03",
+                totalMembers: existingLocal?.totalMembers || (e.slug === "aia-12" ? 55 : 1),
+                totalGroups: e.total_groups || 10,
+                userRole: existingLocal?.userRole || (e.slug === "aia" ? "發起人 / 主辦" : "學員"),
+                isCurrent: isMatch,
+                passcode: e.passcode || "",
+                isDemoMode: existingLocal?.isDemoMode ?? (e.slug === "aia-12"),
+                customRoles: existingLocal?.customRoles || ["授課導師", "隨班助教", "組長幹部", "一般學員"],
+              };
+            });
 
             setEvents(mappedEvents);
             if (typeof window !== "undefined") {
               localStorage.setItem("network_graph_events", JSON.stringify(mappedEvents));
+            }
+
+            if (targetSlug) {
+              const matched = mappedEvents.find((e) => e.slug === targetSlug);
+              if (matched) {
+                setCurrentEvent(matched);
+                if (matched.isDemoMode) {
+                  setMembers(generateMockMembers(currentUser));
+                } else {
+                  setMembers([{ ...currentUser }]);
+                }
+              }
             }
           }
 
