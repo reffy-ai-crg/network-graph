@@ -28,7 +28,10 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     return members.find((m) => m.isCurrentUser);
   }, [members]);
 
+  const hasGrouping = (currentEvent?.totalGroups ?? 10) > 1;
+
   const groups = useMemo(() => {
+    if (!hasGrouping) return ["全部"];
     const groupNums = new Set<number>();
     const total = currentEvent?.totalGroups || 10;
     for (let i = 1; i <= Math.max(total, 10); i++) {
@@ -39,7 +42,7 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     });
     const sorted = Array.from(groupNums).sort((a, b) => a - b);
     return ["全部", "🎓 巡迴指導", ...sorted.map((g) => `第 ${g} 組`)];
-  }, [members, currentEvent?.totalGroups]);
+  }, [members, currentEvent?.totalGroups, hasGrouping]);
 
   const allIndustries = useMemo(() => {
     const customSet = new Set<string>();
@@ -136,6 +139,7 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     return members.filter((m) => {
       const matchInd = selectedIndustry === "全部" || m.industry === selectedIndustry;
       const matchGrp =
+        !hasGrouping ||
         selectedGroup === "全部" ||
         (selectedGroup === "🎓 巡迴指導" && m.group === 0) ||
         `第 ${m.group} 組` === selectedGroup;
@@ -272,20 +276,26 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
 
         {/* 手機版快速選組 & 進階篩選按鈕列 (在桌機上自動隱藏) */}
         <div className="flex sm:hidden items-center justify-between gap-2 pt-0.5">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">🧩 組別:</span>
-            <select
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              className="text-xs w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-medium focus:outline-none focus:border-emerald-500 truncate"
-            >
-              {groups.map((grp) => (
-                <option key={grp} value={grp}>
-                  {grp}
-                </option>
-              ))}
-            </select>
-          </div>
+          {hasGrouping ? (
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">🧩 組別:</span>
+              <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="text-xs w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-medium focus:outline-none focus:border-emerald-500 truncate"
+              >
+                {groups.map((grp) => (
+                  <option key={grp} value={grp}>
+                    {grp}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <span>🤝 全體自由交流（不分組）</span>
+            </div>
+          )}
 
           <button
             onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
@@ -377,40 +387,42 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
           </div>
 
           {/* 桌機版組別快速定位 (在手機版已置入上方快速選組) */}
-          <div className="hidden sm:block space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-slate-400">快速選組：</span>
-                <select
-                  value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
-                  className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-emerald-500"
-                >
-                  {groups.map((grp) => (
-                    <option key={grp} value={grp}>
-                      {grp}
-                    </option>
-                  ))}
-                </select>
+          {hasGrouping && (
+            <div className="hidden sm:block space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-400">快速選組：</span>
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                    className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    {groups.map((grp) => (
+                      <option key={grp} value={grp}>
+                        {grp}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+                {groups.map((grp) => (
+                  <button
+                    key={grp}
+                    onClick={() => setSelectedGroup(grp)}
+                    className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
+                      selectedGroup === grp
+                        ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
+                        : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {grp}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-              {groups.map((grp) => (
-                <button
-                  key={grp}
-                  onClick={() => setSelectedGroup(grp)}
-                  className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
-                    selectedGroup === grp
-                      ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
-                      : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
-                  }`}
-                >
-                  {grp}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -509,13 +521,17 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
-                        member.group === 0
-                          ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 font-bold"
-                          : "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300"
-                      }`}>
-                        {member.group === 0 ? "🎓 巡迴指導" : `第 ${member.group} 組`}
-                      </span>
+                      {hasGrouping && (
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
+                          member.group === 0
+                            ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 font-bold"
+                            : "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300"
+                        }`}>
+                          {member.group === 0
+                            ? (member.role?.includes("導師") || member.role?.includes("講師") || member.role?.includes("助教") ? "🎓 巡迴指導" : "🌐 全體交流")
+                            : `第 ${member.group} 組`}
+                        </span>
+                      )}
                       {member.businessCardUrl && (
                         <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5 font-medium">
                           <CreditCard className="w-2.5 h-2.5" />

@@ -42,8 +42,10 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   // 若為「其他多元領域」，學員自行輸入的具體產業名稱
   const [customIndustry, setCustomIndustry] = useState<string>("");
 
+  const hasGrouping = (currentEvent?.totalGroups ?? 10) > 1;
+
   // 所屬組別與班級身分
-  const [group, setGroup] = useState<number>(currentUser.group || 9);
+  const [group, setGroup] = useState<number>(currentUser.group ?? 0);
   const [role, setRole] = useState<string>(currentUser.role || "一般學員");
   const [isCustomRole, setIsCustomRole] = useState<boolean>(false);
   const [customRoleText, setCustomRoleText] = useState<string>("");
@@ -80,7 +82,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       setName(currentUser.name);
       setCompany(currentUser.company);
       setTitle(currentUser.title);
-      setGroup(currentUser.group || 9);
+      setGroup(currentUser.group ?? 0);
 
       const initialRole = currentUser.role || "一般學員";
       if (availableRoles.includes(initialRole)) {
@@ -155,7 +157,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       surname: name.trim().slice(0, 1) || currentUser.surname,
       company: company.trim() || currentUser.company,
       title: title.trim() || currentUser.title,
-      group: Number(group) || 1,
+      group: hasGrouping ? (typeof group === "number" ? group : 0) : 0,
       role: finalRole as UserProfile["role"],
       industry: finalIndustry,
       offer: offer.trim() || currentUser.offer,
@@ -357,23 +359,30 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
 
           {/* 所屬組別與身分設定 */}
           <div className="space-y-3 bg-slate-50/80 dark:bg-slate-950/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800/80">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-                所屬組別
-              </label>
-              <select
-                value={group}
-                onChange={(e) => setGroup(Number(e.target.value))}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
-              >
-                <option value={0}>🎓 巡迴指導 / 全體幹部（不限組別 / 導師助教）</option>
-                {Array.from({ length: 50 }, (_, i) => i + 1).map((g) => (
-                  <option key={g} value={g}>
-                    第 {g} 組 {g === 9 ? "🌟" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {hasGrouping ? (
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+                  所屬組別
+                </label>
+                <select
+                  value={group}
+                  onChange={(e) => setGroup(Number(e.target.value))}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                >
+                  <option value={0}>🌐 不分組（全體自由交流 / 貴賓）</option>
+                  {Array.from({ length: currentEvent?.totalGroups || 10 }, (_, i) => i + 1).map((g) => (
+                    <option key={g} value={g}>
+                      第 {g} 組 {g === 9 ? "🌟" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                <span>🤝 本活動模式：全體自由交流（無需分組）</span>
+                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold">全體交流</span>
+              </div>
+            )}
 
             <div className="pt-0.5">
               <div className="flex items-center justify-between mb-1">

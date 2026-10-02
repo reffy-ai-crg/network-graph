@@ -66,13 +66,15 @@ function getIndustryColor(ind: string): string {
 }
 
 export function GraphView() {
-  const { members, openDrawer, showToast, theme } = useNetwork();
+  const { members, openDrawer, showToast, theme, currentEvent } = useNetwork();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const hasGrouping = (currentEvent?.totalGroups ?? 10) > 1;
 
   // 版面風格模式：galaxy (自由動態星系) | orbit (太陽系同心圓軌道)
   const [layoutStyle, setLayoutStyle] = useState<"galaxy" | "orbit">("galaxy");
   // 聚類維度：group (組別) | industry (產業)
-  const [clusterMode, setClusterMode] = useState<"group" | "industry">("group");
+  const [clusterMode, setClusterMode] = useState<"group" | "industry">(hasGrouping ? "group" : "industry");
   const [highlightedIndustry, setHighlightedIndustry] = useState<string>("all");
   const [hoveredNodeInfo, setHoveredNodeInfo] = useState<{ member: UserProfile; x: number; y: number; sameIndCount?: number } | null>(null);
 
@@ -128,11 +130,17 @@ export function GraphView() {
     const cy = h / 2;
     const maxGroup = Math.max(...members.map((m) => m.group || 1), 10);
 
-    nodesRef.current = members.map((m) => {
+    nodesRef.current = members.map((m, idx) => {
       let targetX: number;
       let targetY: number;
 
-      if (m.group === 0) {
+      if (!hasGrouping) {
+        // 不分組活動：成員均勻環形分佈在星系中
+        const angle = (idx / Math.max(members.length, 1)) * Math.PI * 2;
+        const dist = Math.min(w, h) * (0.2 + (idx % 3) * 0.08);
+        targetX = cx + Math.cos(angle) * dist + (Math.random() - 0.5) * 40;
+        targetY = cy + Math.sin(angle) * dist + (Math.random() - 0.5) * 40;
+      } else if (m.group === 0) {
         // 巡迴導師與助教：初始分佈在星系的核心中央區域
         targetX = cx + (Math.random() - 0.5) * 80;
         targetY = cy + (Math.random() - 0.5) * 80;
@@ -328,8 +336,8 @@ export function GraphView() {
       ctx.fillText("👑 導師核心樞紐", cx, cy - 56);
     }
 
-    // 1. 同組聚類背景星團光暈 (星系模式)
-    if (layoutStyle === "galaxy" && clusterMode === "group") {
+    // 1. 同組聚類背景星團光暈 (星系模式，且活動有分組)
+    if (hasGrouping && layoutStyle === "galaxy" && clusterMode === "group") {
       const groups: Record<number, GraphNode[]> = {};
       nodes.forEach((n) => {
         if (!groups[n.member.group]) groups[n.member.group] = [];
@@ -367,19 +375,21 @@ export function GraphView() {
 
     // 2. 當滑鼠懸停節點時：繪製動態發光人脈關係線 (同組實線、同產業金黃虛線)
     if (hoveredNode) {
-      // 同組連線
-      const sameGroupPeers = nodes.filter(
-        (n) => n.id !== hoveredNode.id && n.member.group === hoveredNode.member.group
-      );
-      if (sameGroupPeers.length > 0) {
-        ctx.beginPath();
-        sameGroupPeers.forEach((p) => {
-          ctx.moveTo(hoveredNode.x, hoveredNode.y);
-          ctx.lineTo(p.x, p.y);
-        });
-        ctx.strokeStyle = isLight ? "rgba(16, 185, 129, 0.8)" : "rgba(52, 211, 153, 0.8)";
-        ctx.lineWidth = 2.2;
-        ctx.stroke();
+      // 同組連線（僅限有分組且有組號）
+      if (hasGrouping && hoveredNode.member.group > 0) {
+        const sameGroupPeers = nodes.filter(
+          (n) => n.id !== hoveredNode.id && n.member.group === hoveredNode.member.group
+        );
+        if (sameGroupPeers.length > 0) {
+          ctx.beginPath();
+          sameGroupPeers.forEach((p) => {
+            ctx.moveTo(hoveredNode.x, hoveredNode.y);
+            ctx.lineTo(p.x, p.y);
+          });
+          ctx.strokeStyle = isLight ? "rgba(16, 185, 129, 0.8)" : "rgba(52, 211, 153, 0.8)";
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+        }
       }
 
       // 同產業跨組連線
@@ -816,8 +826,8 @@ export function GraphView() {
             </button>
           </div>
 
-          {/* 聚類維度（星系模式時顯示） */}
-          {layoutStyle === "galaxy" && (
+          {/* 聚類維度（星系模式且有分組時顯示） */}
+          {layoutStyle === "galaxy" && hasGrouping && (
             <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-1 px-2 shadow-sm dark:shadow-lg backdrop-blur-md pointer-events-auto flex items-center gap-1 text-xs animate-in fade-in duration-200">
               <Layers className="w-3.5 h-3.5 text-slate-400" />
               <button
@@ -912,13 +922,15 @@ export function GraphView() {
 
       {/* 操作指引與圖例標示 */}
       <div className="absolute bottom-4 left-4 z-20 pointer-events-none text-[11px] text-slate-700 dark:text-slate-300 bg-white/95 dark:bg-slate-900/90 px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-md backdrop-blur-md transition-colors flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-3">
-        <div className="flex items-center gap-1.5 font-medium">
-          <span className="w-3 h-0.5 bg-emerald-500 rounded-full inline-block"></span>
-          <span>🟢 實線：同組夥伴</span>
-        </div>
+        {hasGrouping && (
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-3 h-0.5 bg-emerald-500 rounded-full inline-block"></span>
+            <span>🟢 實線：同組夥伴</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5 font-medium">
           <span className="w-3 h-0.5 border-b-2 border-dashed border-amber-500 inline-block"></span>
-          <span>🟡 虛線：跨組同產業夥伴</span>
+          <span>🟡 虛線：{hasGrouping ? "跨組同產業夥伴" : "同產業人脈夥伴"}</span>
         </div>
         <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
         <span className="text-[10px] text-slate-500 dark:text-slate-400">點擊頭像滑出名片</span>
@@ -940,9 +952,16 @@ export function GraphView() {
           <div className="space-y-0.5 pr-1 text-left">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-bold text-slate-900 dark:text-white">{hoveredNodeInfo.member.name}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-500/30">
-                {hoveredNodeInfo.member.group === 0 ? "巡迴導師" : `第 ${hoveredNodeInfo.member.group} 組`}
-              </span>
+              {hasGrouping && hoveredNodeInfo.member.group > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-500/30">
+                  第 {hoveredNodeInfo.member.group} 組
+                </span>
+              )}
+              {hasGrouping && hoveredNodeInfo.member.group === 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-500/30">
+                  巡迴導師
+                </span>
+              )}
               {hoveredNodeInfo.member.role && (
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-500/30">
                   {hoveredNodeInfo.member.role}

@@ -378,7 +378,9 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                           onChange={(e) => setTotalGroups(Number(e.target.value))}
                           className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
                         >
-                          {Array.from({ length: 50 }, (_, i) => i + 1).map((num) => (
+                          <option value={0}>不需要分組（扶輪社 / 商會 / 年會 / 自由交流）</option>
+                          <option value={1}>不需要分組（全體同一組）</option>
+                          {Array.from({ length: 49 }, (_, i) => i + 2).map((num) => (
                             <option key={num} value={num}>
                               {num} 個組別
                             </option>
@@ -571,7 +573,9 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
                         onChange={(e) => setNewGroups(Number(e.target.value))}
                         className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
                       >
-                        {Array.from({ length: 50 }, (_, i) => i + 1).map((num) => (
+                        <option value={0}>不需要分組（扶輪社 / 商會 / 年會 / 自由交流）</option>
+                        <option value={1}>不需要分組（全體同一組）</option>
+                        {Array.from({ length: 49 }, (_, i) => i + 2).map((num) => (
                           <option key={num} value={num}>
                             {num} 個組別
                           </option>

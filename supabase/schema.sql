@@ -98,6 +98,11 @@ CREATE POLICY "Users can join events"
 ON public.event_members FOR INSERT
 WITH CHECK (true);
 
+CREATE POLICY "Users can update event_members"
+ON public.event_members FOR UPDATE
+USING (true)
+WITH CHECK (true);
+
 CREATE POLICY "Users can leave events"
 ON public.event_members FOR DELETE
 USING (true);

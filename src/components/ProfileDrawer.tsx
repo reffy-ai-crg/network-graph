@@ -397,8 +397,12 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                     ? "bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-500/40"
                     : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30"
                 }`}>
-                  {displayMember.group === 0 ? "🎓 巡迴指導" : `第 ${displayMember.group} 組`}
-                  {displayMember.role && displayMember.role !== "學員" && displayMember.role !== "一般學員"
+                  {(currentEvent?.totalGroups ?? 10) > 1
+                    ? (displayMember.group === 0
+                        ? (displayMember.role?.includes("導師") || displayMember.role?.includes("講師") || displayMember.role?.includes("助教") ? "🎓 巡迴指導" : "🌐 全體交流")
+                        : `第 ${displayMember.group} 組`)
+                    : (displayMember.role || "正式社友")}
+                  {(currentEvent?.totalGroups ?? 10) > 1 && displayMember.role && displayMember.role !== "學員" && displayMember.role !== "一般學員"
                     ? ` · ${displayMember.role === "講師" ? "授課導師" : displayMember.role === "助教" ? "隨班助教" : displayMember.role}`
                     : ""}
                 </span>

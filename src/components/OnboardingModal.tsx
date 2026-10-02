@@ -30,7 +30,8 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   const [name, setName] = useState(isDefaultKevin ? "" : currentUser.name);
   const [company, setCompany] = useState(isDefaultKevin ? "" : currentUser.company);
   const [title, setTitle] = useState(isDefaultKevin ? "" : currentUser.title);
-  const [group, setGroup] = useState<number>(9); // 預設推薦第 9 組
+  const hasGrouping = (currentEvent?.totalGroups ?? 10) > 1;
+  const [group, setGroup] = useState<number>(hasGrouping ? 1 : 0);
   const [role, setRole] = useState<string>("一般學員");
   const [isCustomRole, setIsCustomRole] = useState<boolean>(false);
   const [customRoleText, setCustomRoleText] = useState<string>("");
@@ -64,7 +65,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       setName(isKevin ? "" : currentUser.name);
       setCompany(isKevin ? "" : currentUser.company);
       setTitle(isKevin ? "" : currentUser.title);
-      setGroup(currentUser.group || 9);
+      setGroup(hasGrouping ? (currentUser.group || 1) : 0);
 
       const initialRole = currentUser.role || availableRoomRoles[0] || "一般學員";
       if (availableRoomRoles.includes(initialRole)) {
@@ -81,7 +82,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
         setIndustry(currentUser.industry);
       }
     }
-  }, [isOpen, currentUser, availableRoomRoles]);
+  }, [isOpen, currentUser, availableRoomRoles, hasGrouping]);
 
   if (!isOpen) return null;
 
@@ -97,12 +98,14 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       ? (customRoleText.trim() || "正式成員")
       : (role.trim() || availableRoomRoles[0] || "一般學員");
 
+    const finalGroup = hasGrouping ? (typeof group === "number" ? group : 1) : 0;
+
     updateCurrentUserProfile({
       name: name.trim(),
       surname: name.trim().slice(0, 1),
       company: company.trim() || "自由專業人士",
       title: title.trim() || "學員",
-      group: Number(group) || 9,
+      group: finalGroup,
       role: finalRole as UserProfile["role"],
       industry: industry,
       offer: offer.trim() || "期待在此場合交流與認識跨界夥伴！",
@@ -115,7 +118,11 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       sessionStorage.setItem("network_graph_onboarding_done", "true");
     }
 
-    showToast(`歡迎加入！您已成功就位【第 ${group} 組 · ${finalRole}】🎉`);
+    if (hasGrouping && finalGroup > 0) {
+      showToast(`歡迎加入！您已成功就位【第 ${finalGroup} 組 · ${finalRole}】🎉`);
+    } else {
+      showToast(`歡迎加入！您已成功就位【${finalRole}】🎉`);
+    }
     onClose();
   };
 

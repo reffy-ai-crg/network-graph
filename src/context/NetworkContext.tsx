@@ -177,7 +177,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
                 company: p.company || "",
                 title: p.job_title || "",
                 industry: p.industry || "其他多元領域",
-                group: row.group_number || 1,
+                group: typeof row.group_number === "number" ? row.group_number : 0,
                 role: row.role || "一般學員",
                 avatarUrl: p.avatar_url || undefined,
                 lineId: p.line_id || "",
@@ -335,7 +335,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
                 cohort: e.cohort,
                 date: e.event_date || "2026/03",
                 totalMembers: existingLocal?.totalMembers || (isDemo ? 55 : 1),
-                totalGroups: e.total_groups || 10,
+                totalGroups: typeof e.total_groups === "number" ? e.total_groups : 10,
                 userRole: existingLocal?.userRole || (e.slug === "aia" ? "發起人 / 主辦" : "學員"),
                 isCurrent: isMatch,
                 passcode: e.passcode || "",
@@ -456,12 +456,14 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
     if (updates.group !== undefined || updates.role !== undefined) {
       setCurrentEvent((prev) => {
-        const nextGroup = updates.group ?? currentUser.group;
+        const nextGroup = typeof updates.group === "number" ? updates.group : (currentUser.group ?? 0);
         const nextRole = updates.role ?? currentUser.role;
+        const hasGrouping = (prev.totalGroups ?? 10) > 1;
+        const roleLabel = hasGrouping && nextGroup > 0 ? `第 ${nextGroup} 組 ${nextRole}` : nextRole;
         return {
           ...prev,
-          userRole: `第 ${nextGroup} 組 ${nextRole}`,
-          totalGroups: Math.max(prev.totalGroups || 10, nextGroup),
+          userRole: roleLabel,
+          totalGroups: hasGrouping ? Math.max(prev.totalGroups || 10, nextGroup) : prev.totalGroups,
         };
       });
     }
@@ -488,15 +490,17 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (currentEvent.id && currentEvent.isDemoMode === false) {
-          await client.from("event_members").upsert(
-            {
-              event_id: currentEvent.id,
-              user_id: userUuid,
-              group_number: updated.group || 1,
-              role: updated.role || "一般學員",
-            },
-            { onConflict: "event_id,user_id" }
-          );
+          // 先刪除再插入，徹底解決 Supabase RLS 對 event_members 缺少 UPDATE 政策導致 401 的問題
+          await client.from("event_members").delete().match({
+            event_id: currentEvent.id,
+            user_id: userUuid,
+          });
+          await client.from("event_members").insert({
+            event_id: currentEvent.id,
+            user_id: userUuid,
+            group_number: typeof updated.group === "number" ? updated.group : 0,
+            role: updated.role || "一般學員",
+          });
         }
 
         await loadMembersForEvent(currentEvent, updated);
