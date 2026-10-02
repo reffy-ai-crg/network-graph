@@ -8,15 +8,25 @@ import { Search, X, MessageSquare, ExternalLink, StickyNote, Award, CreditCard, 
 
 interface DirectoryViewProps {
   onOpenEditModal?: () => void;
+  onOpenOnboardingModal?: () => void;
 }
 
-export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
+export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: DirectoryViewProps = {}) {
   const { members, openDrawer, privateNotes, showToast, currentEvent, refreshMembers } = useNetwork();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("全部");
   const [selectedGroup, setSelectedGroup] = useState<string>("全部");
   const [selectedRole, setSelectedRole] = useState<string>("全部");
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(false);
   const [previewMember, setPreviewMember] = useState<UserProfile | null>(null);
+
+  const isUserJoined = useMemo(() => {
+    return members.some((m) => m.isCurrentUser);
+  }, [members]);
+
+  const currentUserMember = useMemo(() => {
+    return members.find((m) => m.isCurrentUser);
+  }, [members]);
 
   const groups = useMemo(() => {
     const groupNums = new Set<number>();
@@ -132,13 +142,42 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
 
   return (
     <div className="flex-1 flex flex-col p-3 sm:p-5 max-w-6xl mx-auto w-full">
-      {/* 純淨真實模式專屬提示橫幅 */}
-      {currentEvent?.isDemoMode === false && (
+      {/* 針對尚未登記就位的新進成員：顯示超醒目新人報到橫幅 */}
+      {!isUserJoined && (
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 rounded-2xl p-4 sm:p-5 mb-3.5 text-white shadow-lg shadow-emerald-950/20 relative overflow-hidden animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase">
+                  ✨ 新同學快速報到
+                </span>
+                <span className="text-xs text-emerald-100 font-medium">歡迎來到 {currentEvent?.title || "AIPM 活動交流房"}</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-1.5">
+                <span>👋 您尚未登記進駐名冊！</span>
+              </h3>
+              <p className="text-xs text-emerald-50 mt-1 max-w-xl leading-relaxed">
+                只需 10 秒填寫您的組別（如：<strong>第 9 組 🌟</strong>）與公司職稱，即可與全班同學互相交換名片與連結！
+              </p>
+            </div>
+            <button
+              onClick={() => (onOpenOnboardingModal ? onOpenOnboardingModal() : onOpenEditModal?.())}
+              className="shrink-0 px-4 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 active:scale-95 font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-emerald-600" />
+              <span>👉 立即登記名片 (選擇組別)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 純淨真實模式專屬提示橫幅（已就位成員） */}
+      {isUserJoined && currentEvent?.isDemoMode === false && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 rounded-2xl px-4 py-3 mb-3.5 text-emerald-900 dark:text-emerald-200 shadow-xs backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <span className="text-base">🌱</span>
             <span className="leading-snug">
-              <strong>純淨真實模式已生效</strong>：本活動房不含任何 55 位虛擬示範名單，目前全體共 <strong>{members.length}</strong> 位真實成員。
+              <strong>純淨真實模式已生效</strong>：您已進駐 <strong>第 {currentUserMember?.group || 9} 組</strong>（全體共 <strong>{members.length}</strong> 位真實同學）。
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -148,7 +187,7 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
                 className="text-[11px] px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition shadow-xs flex items-center justify-center gap-1 cursor-pointer"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>填寫 / 編輯名片</span>
+                <span>✏️ 編輯個人名片</span>
               </button>
             )}
             <button
@@ -163,14 +202,14 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
               className="text-[11px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-xl text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-slate-800 transition shrink-0 shadow-xs flex items-center justify-center gap-1 cursor-pointer"
             >
               <Share2 className="w-3 h-3" />
-              <span>複製專屬邀請</span>
+              <span>📱 複製專屬邀請</span>
             </button>
           </div>
         </div>
       )}
 
       {/* 搜尋與複合過濾器 */}
-      <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 mb-4 space-y-3 shadow-xs dark:shadow-md backdrop-blur-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 mb-4 space-y-2.5 shadow-xs dark:shadow-md backdrop-blur-sm transition-colors">
         {/* 關鍵字搜尋 */}
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -191,111 +230,146 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
           )}
         </div>
 
-        {/* 身分角色過濾 (導師、助教、組長、學員) */}
-        <div className="space-y-1.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
-            <span className="flex items-center gap-1">
-              <span>🎖️ 身分角色篩選：</span>
-              <span className="text-[10px] text-slate-400">（快速查找老師、助教或組長）</span>
-            </span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-semibold">
-              共 {filteredMembers.length} 位成員
-            </span>
+        {/* 手機版快速選組 & 進階篩選按鈕列 (在桌機上自動隱藏) */}
+        <div className="flex sm:hidden items-center justify-between gap-2 pt-0.5">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">🧩 組別:</span>
+            <select
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="text-xs w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-medium focus:outline-none focus:border-emerald-500 truncate"
+            >
+              {groups.map((grp) => (
+                <option key={grp} value={grp}>
+                  {grp}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {roleFilters.map(({ id, label, count }) => {
-              const isSelected = selectedRole === id;
-              const isLead = id.includes("導師") || id.includes("講師") || id.includes("評審") || id.includes("VIP");
-              const isTA = id.includes("助教") || id.includes("顧問");
-              const isLeader = id.includes("組長") || id.includes("幹部") || id.includes("隊長") || id.includes("會長");
 
-              return (
+          <button
+            onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+            className={`text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1 shrink-0 font-medium transition ${
+              isFiltersExpanded || selectedRole !== "全部" || selectedIndustry !== "全部"
+                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 font-semibold"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+            }`}
+          >
+            <span>{isFiltersExpanded ? "收合篩選" : "更多篩選"}</span>
+            {(selectedRole !== "全部" || selectedIndustry !== "全部") && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            )}
+            <span className="text-[10px]">{isFiltersExpanded ? "▲" : "▼"}</span>
+          </button>
+        </div>
+
+        {/* 詳細過濾清單（手機版預設折疊，桌機版常駐展開） */}
+        <div className={`space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800/80 ${isFiltersExpanded ? "block" : "hidden sm:block"}`}>
+          {/* 身分角色過濾 (導師、助教、組長、學員) */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <span>🎖️ 身分角色篩選：</span>
+                <span className="text-[10px] text-slate-400">（快速查找老師、助教或組長）</span>
+              </span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-semibold">
+                共 {filteredMembers.length} 位成員
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+              {roleFilters.map(({ id, label, count }) => {
+                const isSelected = selectedRole === id;
+                const isLead = id.includes("導師") || id.includes("講師") || id.includes("評審") || id.includes("VIP");
+                const isTA = id.includes("助教") || id.includes("顧問");
+                const isLeader = id.includes("組長") || id.includes("幹部") || id.includes("隊長") || id.includes("會長");
+
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setSelectedRole(id)}
+                    className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border flex items-center gap-1.5 ${
+                      isSelected
+                        ? isLead
+                          ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500 font-bold shadow-xs ring-1 ring-amber-400/50"
+                          : isTA
+                          ? "bg-sky-500/20 text-sky-800 dark:text-sky-200 border-sky-500 font-bold shadow-xs ring-1 ring-sky-400/50"
+                          : isLeader
+                          ? "bg-indigo-500/20 text-indigo-800 dark:text-indigo-200 border-indigo-500 font-bold shadow-xs ring-1 ring-indigo-400/50"
+                          : "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-bold shadow-xs"
+                        : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 產業標籤過濾 */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+              <span>🏢 產業分類：</span>
+              <span className="text-slate-400 text-[10px]">
+                點選分類查看跨公司夥伴
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+              {["全部", ...allIndustries].map((ind) => (
                 <button
-                  key={id}
-                  onClick={() => setSelectedRole(id)}
-                  className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border flex items-center gap-1.5 ${
-                    isSelected
-                      ? isLead
-                        ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500 font-bold shadow-xs ring-1 ring-amber-400/50"
-                        : isTA
-                        ? "bg-sky-500/20 text-sky-800 dark:text-sky-200 border-sky-500 font-bold shadow-xs ring-1 ring-sky-400/50"
-                        : isLeader
-                        ? "bg-indigo-500/20 text-indigo-800 dark:text-indigo-200 border-indigo-500 font-bold shadow-xs ring-1 ring-indigo-400/50"
-                        : "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-bold shadow-xs"
+                  key={ind}
+                  onClick={() => setSelectedIndustry(ind)}
+                  className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
+                    selectedIndustry === ind
+                      ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
                       : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
                   }`}
                 >
-                  <span>{label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isSelected ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                  }`}>
-                    {count}
-                  </span>
+                  {ind}
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 產業標籤過濾 */}
-        <div className="space-y-1.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
-            <span>🏢 產業分類：</span>
-            <span className="text-slate-400 text-[10px]">
-              點選分類查看跨公司夥伴
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {["全部", ...allIndustries].map((ind) => (
-              <button
-                key={ind}
-                onClick={() => setSelectedIndustry(ind)}
-                className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
-                  selectedIndustry === ind
-                    ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
-                    : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                {ind}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 組別過濾 */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
-            {/* 1~50 組快速下拉跳轉 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400">快速選組：</span>
-              <select
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-emerald-500"
-              >
-                {groups.map((grp) => (
-                  <option key={grp} value={grp}>
-                    {grp}
-                  </option>
-                ))}
-              </select>
+              ))}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {groups.map((grp) => (
-              <button
-                key={grp}
-                onClick={() => setSelectedGroup(grp)}
-                className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
-                  selectedGroup === grp
-                    ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
-                    : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                {grp}
-              </button>
-            ))}
+
+          {/* 桌機版組別快速定位 (在手機版已置入上方快速選組) */}
+          <div className="hidden sm:block space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">🧩 組別快速定位：</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400">快速選組：</span>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-emerald-500"
+                >
+                  {groups.map((grp) => (
+                    <option key={grp} value={grp}>
+                      {grp}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+              {groups.map((grp) => (
+                <button
+                  key={grp}
+                  onClick={() => setSelectedGroup(grp)}
+                  className={`px-3 py-1 rounded-full whitespace-nowrap text-xs transition border ${
+                    selectedGroup === grp
+                      ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500 font-semibold"
+                      : "bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {grp}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

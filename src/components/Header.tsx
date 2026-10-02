@@ -188,10 +188,10 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
             <span>我的名片</span>
           </button>
 
-          {/* 活動後台按鈕 */}
+          {/* 活動後台按鈕（手機版隱藏避免初次造訪同學困惑，桌機版常駐） */}
           <button
             onClick={onOpenAdminModal}
-            className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-300 dark:border-amber-500/40 px-2.5 py-1.5 rounded-full transition flex items-center gap-1 shadow-xs font-medium"
+            className="hidden sm:flex text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-300 dark:border-amber-500/40 px-2.5 py-1.5 rounded-full transition items-center gap-1 shadow-xs font-medium"
             title="活動主辦管理後台"
           >
             <Settings className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
