@@ -13,18 +13,45 @@ import { AdminEventModal } from "../components/AdminEventModal";
 import { OnboardingModal } from "../components/OnboardingModal";
 import { JoinEventModal } from "../components/JoinEventModal";
 import { ApplyEventModal } from "../components/ApplyEventModal";
+import { MarketingLandingPage } from "../components/MarketingLandingPage";
 
 export default function Home() {
-  const { activeTab, currentEvent, members } = useNetwork();
+  const { activeTab, currentEvent, members, switchEvent } = useNetwork();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
+  // 判斷當前是「官網產品首頁」還是「活動房間內部」
+  // 若網址帶有 ?event=xxx 或 ?room=xxx，代表使用者透過專屬邀請連結直接入房
+  const [isInEventRoom, setIsInEventRoom] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const search = window.location.search;
+      if (search.includes("event=") || search.includes("room=")) {
+        return true;
+      }
+      if (sessionStorage.getItem("network_graph_active_room_view") === "true") {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  // 監聽網址變化，支援向後相容的專屬邀請連結
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const search = window.location.search;
+      if (search.includes("event=") || search.includes("room=")) {
+        setIsInEventRoom(true);
+        sessionStorage.setItem("network_graph_active_room_view", "true");
+      }
+    }
+  }, []);
+
   // 針對進入「純淨真實模式」房間的訪客：若尚未在名冊中就位且在目錄頁，自動平滑彈出新人迎賓就位卡
   useEffect(() => {
-    if (currentEvent.isDemoMode === false && activeTab === "directory") {
+    if (isInEventRoom && currentEvent.isDemoMode === false && activeTab === "directory") {
       const isUserJoined = members.some((m) => m.isCurrentUser);
       const isDismissed = typeof window !== "undefined" && sessionStorage.getItem("network_graph_onboarding_dismissed");
       
@@ -40,41 +67,65 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--theme-page-bg,#f8fafc)] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* 頂部導航 */}
-      <Header 
-        onOpenEditModal={() => setIsEditModalOpen(true)}
-        onOpenAdminModal={() => setIsAdminModalOpen(true)}
-        onOpenJoinModal={() => setIsJoinModalOpen(true)}
-        onOpenApplyModal={() => setIsApplyModalOpen(true)}
-      />
+      {!isInEventRoom ? (
+        /* 模式 A：官方產品形象首頁 (Marketing Landing Page) */
+        <MarketingLandingPage
+          onOpenJoinModal={() => setIsJoinModalOpen(true)}
+          onOpenApplyModal={() => setIsApplyModalOpen(true)}
+          onEnterDemoRoom={(slug) => {
+            switchEvent(slug);
+            setIsInEventRoom(true);
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("network_graph_active_room_view", "true");
+            }
+          }}
+        />
+      ) : (
+        /* 模式 B：專屬活動空間內部 (Event Space: Header + Views) */
+        <>
+          {/* 頂部導航 */}
+          <Header 
+            onOpenEditModal={() => setIsEditModalOpen(true)}
+            onOpenAdminModal={() => setIsAdminModalOpen(true)}
+            onOpenJoinModal={() => setIsJoinModalOpen(true)}
+            onOpenApplyModal={() => setIsApplyModalOpen(true)}
+            onReturnToPortal={() => {
+              setIsInEventRoom(false);
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem("network_graph_active_room_view");
+              }
+            }}
+          />
 
-      {/* 核心視圖切換 */}
-      <div className="flex-1 flex flex-col">
-        {activeTab === "landing" && (
-          <EventLandingView 
-            onOpenOnboardingModal={() => setIsOnboardingOpen(true)}
-            onOpenEditModal={() => setIsEditModalOpen(true)}
-            onOpenAdminModal={() => setIsAdminModalOpen(true)}
-            onOpenJoinModal={() => setIsJoinModalOpen(true)}
-            onOpenApplyModal={() => setIsApplyModalOpen(true)}
-          />
-        )}
-        {activeTab === "directory" && (
-          <DirectoryView 
-            onOpenEditModal={() => setIsEditModalOpen(true)}
-            onOpenOnboardingModal={() => setIsOnboardingOpen(true)}
-          />
-        )}
-        {activeTab === "graph" && <GraphView />}
-        {activeTab === "hub" && (
-          <MyHubView 
-            onOpenEditModal={() => setIsEditModalOpen(true)}
-            onOpenAdminModal={() => setIsAdminModalOpen(true)}
-            onOpenJoinModal={() => setIsJoinModalOpen(true)}
-            onOpenApplyModal={() => setIsApplyModalOpen(true)}
-          />
-        )}
-      </div>
+          {/* 核心視圖切換 */}
+          <div className="flex-1 flex flex-col">
+            {activeTab === "landing" && (
+              <EventLandingView 
+                onOpenOnboardingModal={() => setIsOnboardingOpen(true)}
+                onOpenEditModal={() => setIsEditModalOpen(true)}
+                onOpenAdminModal={() => setIsAdminModalOpen(true)}
+                onOpenJoinModal={() => setIsJoinModalOpen(true)}
+                onOpenApplyModal={() => setIsApplyModalOpen(true)}
+              />
+            )}
+            {activeTab === "directory" && (
+              <DirectoryView 
+                onOpenEditModal={() => setIsEditModalOpen(true)}
+                onOpenOnboardingModal={() => setIsOnboardingOpen(true)}
+              />
+            )}
+            {activeTab === "graph" && <GraphView />}
+            {activeTab === "hub" && (
+              <MyHubView 
+                onOpenEditModal={() => setIsEditModalOpen(true)}
+                onOpenAdminModal={() => setIsAdminModalOpen(true)}
+                onOpenJoinModal={() => setIsJoinModalOpen(true)}
+                onOpenApplyModal={() => setIsApplyModalOpen(true)}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       {/* 詳細名片抽屜 (Bottom Sheet) */}
       <ProfileDrawer onOpenEditModal={() => setIsEditModalOpen(true)} />
@@ -102,6 +153,12 @@ export default function Home() {
         onClose={() => setIsJoinModalOpen(false)}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onOpenApplyModal={() => setIsApplyModalOpen(true)}
+        onJoinedSuccess={() => {
+          setIsInEventRoom(true);
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("network_graph_active_room_view", "true");
+          }
+        }}
       />
 
       {/* 企業/社團試辦開房預約申請彈窗 */}

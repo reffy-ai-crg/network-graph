@@ -9,9 +9,16 @@ interface JoinEventModalProps {
   onClose: () => void;
   onOpenAdminModal?: () => void;
   onOpenApplyModal?: () => void;
+  onJoinedSuccess?: () => void;
 }
 
-export function JoinEventModal({ isOpen, onClose, onOpenAdminModal, onOpenApplyModal }: JoinEventModalProps) {
+export function JoinEventModal({
+  isOpen,
+  onClose,
+  onOpenAdminModal,
+  onOpenApplyModal,
+  onJoinedSuccess,
+}: JoinEventModalProps) {
   const { 
     currentEvent, 
     myJoinedEvents, 
@@ -42,6 +49,7 @@ export function JoinEventModal({ isOpen, onClose, onOpenAdminModal, onOpenApplyM
       if (res.success) {
         showToast(res.message);
         setCode("");
+        onJoinedSuccess?.();
         onClose();
       } else {
         setErrorMsg(res.message);
@@ -56,6 +64,7 @@ export function JoinEventModal({ isOpen, onClose, onOpenAdminModal, onOpenApplyM
   const handleQuickSwitch = (eventId: string, title: string) => {
     switchEvent(eventId);
     showToast(`已切換至「${title}」`);
+    onJoinedSuccess?.();
     onClose();
   };
 

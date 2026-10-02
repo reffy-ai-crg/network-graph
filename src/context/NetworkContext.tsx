@@ -48,7 +48,7 @@ interface NetworkContextType {
   themePreset: ThemePreset;
   setThemePreset: (preset: ThemePreset) => void;
   isAdminUnlocked: boolean;
-  unlockAdmin: (pin: string) => boolean;
+  unlockAdmin: (pin: string) => boolean | Promise<boolean>;
   adminPin: string;
   updateAdminPin: (newPin: string) => void;
   joinEventByCode: (code: string) => Promise<{ success: boolean; message: string }>;
@@ -485,6 +485,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       syncCloud();
     }
 
+    // 檢查後端管理員安全 Session (HttpOnly Cookie)
+    fetch("/api/admin/verify")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          setIsAdminUnlocked(true);
+        }
+      })
+      .catch(() => {});
+
     // 3. LINE LIFF 自動授權與資料帶入
     initLiff().then((res) => {
       if (res.profile) {
@@ -853,6 +863,17 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // 調用後端伺服器 API
+    try {
+      await fetch("/api/applications/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appData),
+      });
+    } catch (err) {
+      console.warn("API application submit notice:", err);
+    }
+
     showToast("🎉 活動開辦預約已成功送出！專案特助將於24小時內聯繫。");
     return { success: true, message: "申請已成功送出！" };
   };
@@ -996,18 +1017,39 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     showToast(`已套用【${presetNames[preset]}】風格！`);
   };
 
-  // 主辦人管理員密鑰解鎖
-  const unlockAdmin = (pin: string) => {
-    if (pin.trim() === adminPin) {
-      setIsAdminUnlocked(true);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("network_graph_admin_unlocked", "true");
+  // 主辦人管理員密鑰解鎖 (由後端伺服器簽發安全 HttpOnly Cookie)
+  const unlockAdmin = async (pin: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pin.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsAdminUnlocked(true);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("network_graph_admin_unlocked", "true");
+        }
+        showToast("主辦人密鑰驗證成功！已由後端簽發安全憑證 ✓");
+        return true;
+      } else {
+        showToast(data.message || "管理密鑰不正確，請重新確認！");
+        return false;
       }
-      showToast("主辦人密鑰驗證成功！已解鎖管理後台 ✓");
-      return true;
+    } catch {
+      // 離線降級相容
+      if (pin.trim() === adminPin) {
+        setIsAdminUnlocked(true);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("network_graph_admin_unlocked", "true");
+        }
+        showToast("主辦人密鑰驗證成功 (離線相容模式) ✓");
+        return true;
+      }
+      showToast("管理密鑰不正確，請重新確認！");
+      return false;
     }
-    showToast("管理密鑰不正確，請重新確認！");
-    return false;
   };
 
   const updateAdminPin = (newPin: string) => {

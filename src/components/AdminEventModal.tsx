@@ -119,9 +119,9 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
   const inviteUrl = `${liffBaseUrl}?event=${currentEvent.slug}`;
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = unlockAdmin(pinInput);
+    const success = await unlockAdmin(pinInput);
     if (!success) {
       setPinError(true);
     } else {

@@ -2,16 +2,23 @@
 
 import React from "react";
 import { useNetwork } from "../context/NetworkContext";
-import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, Home, KeyRound } from "lucide-react";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, Home, KeyRound, Globe } from "lucide-react";
 
 interface HeaderProps {
   onOpenEditModal: () => void;
   onOpenAdminModal: () => void;
   onOpenJoinModal?: () => void;
   onOpenApplyModal?: () => void;
+  onReturnToPortal?: () => void;
 }
 
-export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal, onOpenApplyModal }: HeaderProps) {
+export function Header({
+  onOpenEditModal,
+  onOpenAdminModal,
+  onOpenJoinModal,
+  onOpenApplyModal,
+  onReturnToPortal,
+}: HeaderProps) {
   const { 
     currentEvent, 
     activeTab, 
@@ -79,6 +86,18 @@ export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal, onO
         </div>
 
         <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* 返回官網首頁按鈕 */}
+          {onReturnToPortal && (
+            <button
+              onClick={onReturnToPortal}
+              className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-1 font-medium shadow-2xs cursor-pointer"
+              title="返回產品形象官網首頁"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">官網首頁</span>
+            </button>
+          )}
+
           {/* 主題切換按鈕 (🌞 / 🌙) */}
           <button
             onClick={toggleTheme}
