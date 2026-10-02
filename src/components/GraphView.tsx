@@ -74,7 +74,7 @@ export function GraphView() {
   // 聚類維度：group (組別) | industry (產業)
   const [clusterMode, setClusterMode] = useState<"group" | "industry">("group");
   const [highlightedIndustry, setHighlightedIndustry] = useState<string>("all");
-  const [hoveredNodeInfo, setHoveredNodeInfo] = useState<{ member: UserProfile; x: number; y: number } | null>(null);
+  const [hoveredNodeInfo, setHoveredNodeInfo] = useState<{ member: UserProfile; x: number; y: number; sameIndCount?: number } | null>(null);
 
   // 圖片快取，確保 Canvas 60fps 順暢渲染真實頭像
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -658,7 +658,10 @@ export function GraphView() {
     hoveredNodeRef.current = node;
 
     if (node && !isPanningRef.current && !draggedNodeRef.current) {
-      setHoveredNodeInfo({ member: node.member, x: e.clientX, y: e.clientY });
+      const sameIndCount = nodesRef.current.filter(
+        (n) => n.id !== node.id && n.member.industry === node.member.industry
+      ).length;
+      setHoveredNodeInfo({ member: node.member, x: e.clientX, y: e.clientY, sameIndCount });
     } else {
       setHoveredNodeInfo(null);
     }
@@ -702,7 +705,10 @@ export function GraphView() {
       if (node) {
         draggedNodeRef.current = node;
         hoveredNodeRef.current = node;
-        setHoveredNodeInfo({ member: node.member, x: touch.clientX, y: touch.clientY });
+        const sameIndCount = nodesRef.current.filter(
+          (n) => n.id !== node.id && n.member.industry === node.member.industry
+        ).length;
+        setHoveredNodeInfo({ member: node.member, x: touch.clientX, y: touch.clientY, sameIndCount });
       } else {
         isPanningRef.current = true;
         panStartRef.current = {
@@ -729,7 +735,10 @@ export function GraphView() {
         draggedNodeRef.current.y = pos.y;
         draggedNodeRef.current.vx = 0;
         draggedNodeRef.current.vy = 0;
-        setHoveredNodeInfo({ member: draggedNodeRef.current.member, x: touch.clientX, y: touch.clientY });
+        const sameIndCount = nodesRef.current.filter(
+          (n) => n.id !== draggedNodeRef.current!.id && n.member.industry === draggedNodeRef.current!.member.industry
+        ).length;
+        setHoveredNodeInfo({ member: draggedNodeRef.current.member, x: touch.clientX, y: touch.clientY, sameIndCount });
       } else if (isPanningRef.current) {
         transformRef.current.x = touch.clientX - panStartRef.current.x;
         transformRef.current.y = touch.clientY - panStartRef.current.y;
@@ -901,9 +910,18 @@ export function GraphView() {
         </button>
       </div>
 
-      {/* 操作指引小浮水印 */}
-      <div className="absolute bottom-4 left-4 z-20 pointer-events-none text-[11px] text-slate-600 dark:text-slate-400 bg-white/90 dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800/80 shadow-xs backdrop-blur-sm transition-colors">
-        💡 支援頭像照片 • 滑鼠懸停/點擊查看關係連線 • 點擊頭像滑出詳細名片
+      {/* 操作指引與圖例標示 */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none text-[11px] text-slate-700 dark:text-slate-300 bg-white/95 dark:bg-slate-900/90 px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-md backdrop-blur-md transition-colors flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 font-medium">
+          <span className="w-3 h-0.5 bg-emerald-500 rounded-full inline-block"></span>
+          <span>🟢 實線：同組夥伴</span>
+        </div>
+        <div className="flex items-center gap-1.5 font-medium">
+          <span className="w-3 h-0.5 border-b-2 border-dashed border-amber-500 inline-block"></span>
+          <span>🟡 虛線：跨組同產業夥伴</span>
+        </div>
+        <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
+        <span className="text-[10px] text-slate-500 dark:text-slate-400">點擊頭像滑出名片</span>
       </div>
 
       {/* 懸浮節點時放大的即時照片與資料浮動卡片 (Hover Magnified Photo Preview) */}
@@ -937,6 +955,12 @@ export function GraphView() {
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
               {hoveredNodeInfo.member.title} • {hoveredNodeInfo.member.industry}
             </p>
+            {typeof hoveredNodeInfo.sameIndCount === "number" && hoveredNodeInfo.sameIndCount > 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium pt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>黃色虛線：連接全班 {hoveredNodeInfo.sameIndCount} 位同為「{hoveredNodeInfo.member.industry}」跨組夥伴</span>
+              </p>
+            )}
           </div>
         </div>
       )}
