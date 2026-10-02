@@ -141,20 +141,31 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
               <strong>純淨真實模式已生效</strong>：本活動房不含任何 55 位虛擬示範名單，目前全體共 <strong>{members.length}</strong> 位真實成員。
             </span>
           </div>
-          <button
-            onClick={() => {
-              const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
-              const inviteUrl = `${liffBaseUrl}?event=${currentEvent?.slug || "aia"}`;
-              if (typeof navigator !== "undefined" && navigator.clipboard) {
-                navigator.clipboard.writeText(inviteUrl);
-                showToast(`已複製專屬邀請連結！可直接貼給同學：\n${inviteUrl}`);
-              }
-            }}
-            className="text-[11px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-xl text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-slate-800 transition shrink-0 shadow-xs flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <Share2 className="w-3 h-3" />
-            <span>複製專屬邀請連結</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenEditModal && (
+              <button
+                onClick={onOpenEditModal}
+                className="text-[11px] px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>填寫 / 編輯名片</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+                const inviteUrl = `${liffBaseUrl}?event=${currentEvent?.slug || "aia"}`;
+                if (typeof navigator !== "undefined" && navigator.clipboard) {
+                  navigator.clipboard.writeText(inviteUrl);
+                  showToast(`已複製專屬邀請連結！可直接貼給同學：\n${inviteUrl}`);
+                }
+              }}
+              className="text-[11px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-xl text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-slate-800 transition shrink-0 shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Share2 className="w-3 h-3" />
+              <span>複製專屬邀請</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -429,12 +440,28 @@ export function DirectoryView({ onOpenEditModal }: DirectoryViewProps = {}) {
                   </div>
 
                   <div className="flex items-center gap-1.5">
+                    {isSelf && onOpenEditModal && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenEditModal();
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition flex items-center gap-1 shadow-xs"
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        <span>編輯名片</span>
+                      </button>
+                    )}
                     <button
                       onClick={(e) => handleLineClick(e, member)}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-medium transition flex items-center gap-1 shadow-xs"
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition flex items-center gap-1 shadow-xs ${
+                        isSelf
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      }`}
                     >
                       <MessageSquare className="w-3 h-3" />
-                      <span>加 LINE</span>
+                      <span>{isSelf ? "LINE ID" : "加 LINE"}</span>
                     </button>
                     <button
                       onClick={(e) => handleLinkedInClick(e, member)}

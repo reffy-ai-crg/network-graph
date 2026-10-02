@@ -425,6 +425,19 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                 <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>名片與照片管理 (二選一或同時維護)：</span>
               </div>
+              {onOpenEditModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDrawer();
+                    onOpenEditModal();
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>✏️ 編輯個人資料與組別（加入 / 改選組別）</span>
+                </button>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
