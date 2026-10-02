@@ -51,17 +51,42 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     return [...INDUSTRIES, ...Array.from(customSet)];
   }, [members]);
 
-  const roomRoles = useMemo(() => {
-    if (currentEvent?.customRoles && currentEvent.customRoles.length > 0) {
-      return currentEvent.customRoles;
-    }
-    return ["授課導師", "隨班助教", "組長幹部", "一般學員"];
-  }, [currentEvent?.customRoles]);
+  const allRolesList = useMemo(() => {
+    const roleSet = new Set<string>();
+    // 1. 房間預設角色
+    const defaultRoles = currentEvent?.customRoles && currentEvent.customRoles.length > 0
+      ? currentEvent.customRoles
+      : ["授課導師", "隨班助教", "組長幹部", "一般學員"];
+    defaultRoles.forEach((r) => roleSet.add(r));
+
+    // 2. 所有成員自行輸入的身分角色（如：扶輪社社長、秘書、社友等）
+    members.forEach((m) => {
+      if (m.role && m.role.trim()) {
+        roleSet.add(m.role.trim());
+      }
+    });
+
+    return Array.from(roleSet);
+  }, [currentEvent?.customRoles, members]);
 
   const matchesRole = useCallback((memberRole: string | undefined, filterRole: string) => {
     if (filterRole === "全部") return true;
     const mRole = (memberRole || "一般學員").trim();
     if (mRole === filterRole) return true;
+
+    // 扶輪社 / 商會角色匹配
+    if (filterRole.includes("社長") || filterRole === "社長") {
+      if (mRole.includes("社長") || mRole === "社長") return true;
+    }
+    if (filterRole.includes("秘書") || filterRole === "秘書") {
+      if (mRole.includes("秘書") || mRole === "秘書") return true;
+    }
+    if (filterRole.includes("財務") || filterRole === "財務") {
+      if (mRole.includes("財務") || mRole === "財務") return true;
+    }
+    if (filterRole.includes("社友") || filterRole === "社友") {
+      if (mRole.includes("社友") || mRole === "社友") return true;
+    }
 
     // 導師 / 講師 / 授課導師
     if (filterRole.includes("導師") || filterRole.includes("講師") || filterRole === "講師") {
@@ -71,9 +96,9 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     if (filterRole.includes("助教") || filterRole === "助教") {
       if (mRole.includes("助教") || mRole === "助教") return true;
     }
-    // 組長 / 組長幹部 / 副組長 / 隊長
-    if (filterRole.includes("組長") || filterRole.includes("幹部") || filterRole.includes("隊長") || filterRole === "組長") {
-      if (mRole.includes("組長") || mRole.includes("幹部") || mRole.includes("隊長") || mRole === "副組長") return true;
+    // 組長 / 組長幹部 / 副組長 / 隊長 / 會長
+    if (filterRole.includes("組長") || filterRole.includes("幹部") || filterRole.includes("隊長") || filterRole === "組長" || filterRole.includes("會長")) {
+      if (mRole.includes("組長") || mRole.includes("幹部") || mRole.includes("隊長") || mRole.includes("會長") || mRole === "副組長") return true;
     }
     // 學員 / 一般學員 / 會員 / 參賽者
     if (filterRole.includes("學員") || filterRole.includes("會員") || filterRole.includes("參賽") || filterRole === "學員") {
@@ -86,13 +111,15 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
   const roleFilters = useMemo(() => {
     return [
       { id: "全部", label: "全部成員", count: members.length },
-      ...roomRoles.map((role) => {
+      ...allRolesList.map((role) => {
         let icon = "👤 ";
         if (role.includes("導師") || role.includes("講師") || role.includes("講者")) icon = "👨‍🏫 ";
         else if (role.includes("助教")) icon = "💼 ";
-        else if (role.includes("組長") || role.includes("隊長") || role.includes("會長") || role.includes("幹部")) icon = "🌟 ";
+        else if (role.includes("社長") || role.includes("組長") || role.includes("隊長") || role.includes("會長") || role.includes("幹部") || role.includes("召集人")) icon = "🌟 ";
         else if (role.includes("評審") || role.includes("貴賓") || role.includes("VIP") || role.includes("顧問")) icon = "👑 ";
-        else if (role.includes("投資") || role.includes("創投") || role.includes("天使")) icon = "💎 ";
+        else if (role.includes("投資") || role.includes("創投") || role.includes("天使") || role.includes("財務")) icon = "💎 ";
+        else if (role.includes("秘書")) icon = "📝 ";
+        else if (role.includes("社友") || role.includes("會員")) icon = "🤝 ";
         else if (role.includes("參賽") || role.includes("黑客") || role.includes("選手")) icon = "🚀 ";
 
         const count = members.filter((m) => matchesRole(m.role, role)).length;
@@ -101,9 +128,9 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
           label: `${icon}${role}`,
           count,
         };
-      }),
+      }).filter((rf) => rf.count > 0 || currentEvent?.customRoles?.includes(rf.id)),
     ];
-  }, [members, roomRoles, matchesRole]);
+  }, [members, allRolesList, matchesRole, currentEvent?.customRoles]);
 
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
@@ -138,6 +165,19 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
     e.stopPropagation();
     showToast(`正在開啟 ${member.name} 的 LinkedIn 檔案...`);
     window.open(member.linkedinUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const getRoleBadgeIcon = (roleName?: string) => {
+    if (!roleName) return "👤";
+    if (roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者")) return "👨‍🏫";
+    if (roleName.includes("助教")) return "💼";
+    if (roleName.includes("社長") || roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") || roleName.includes("幹部") || roleName.includes("召集人")) return "🌟";
+    if (roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") || roleName.includes("顧問")) return "👑";
+    if (roleName.includes("投資") || roleName.includes("創投") || roleName.includes("天使") || roleName.includes("財務")) return "💎";
+    if (roleName.includes("秘書")) return "📝";
+    if (roleName.includes("社友") || roleName.includes("會員")) return "🤝";
+    if (roleName.includes("參賽") || roleName.includes("黑客") || roleName.includes("選手")) return "🚀";
+    return "👤";
   };
 
   return (
@@ -381,8 +421,8 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
             const hasNote = !!privateNotes[member.id];
             const isSelf = member.isCurrentUser;
             const isLeaderRole = member.role?.includes("導師") || member.role?.includes("講師") || member.role?.includes("講者") || member.role?.includes("評審");
-            const isSubRole = member.role?.includes("助教") || member.role?.includes("顧問");
-            const isGroupLead = member.role?.includes("組長") || member.role?.includes("副組長") || member.role?.includes("隊長") || member.role?.includes("會長") || member.role?.includes("幹部");
+            const isSubRole = member.role?.includes("助教") || member.role?.includes("顧問") || member.role?.includes("秘書");
+            const isGroupLead = member.role?.includes("組長") || member.role?.includes("副組長") || member.role?.includes("隊長") || member.role?.includes("會長") || member.role?.includes("幹部") || member.role?.includes("社長") || member.role?.includes("副社長") || member.role?.includes("召集人");
 
             return (
               <div
@@ -393,6 +433,8 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
                     ? "bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 border-amber-400/60 ring-1 ring-amber-400/30"
                     : isSubRole
                     ? "bg-gradient-to-br from-sky-500/10 via-white to-sky-500/5 dark:from-sky-950/20 dark:via-slate-900 dark:to-slate-900 border-sky-400/60 ring-1 ring-sky-400/30"
+                    : isGroupLead
+                    ? "bg-gradient-to-br from-indigo-500/10 via-white to-indigo-500/5 dark:from-indigo-950/20 dark:via-slate-900 dark:to-slate-900 border-indigo-400/60 ring-1 ring-indigo-400/30"
                     : isSelf
                     ? "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-500/70 ring-1 ring-emerald-500/50"
                     : "bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-800"
@@ -412,6 +454,8 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
                             ? "bg-amber-100 text-amber-800 border-2 border-amber-400"
                             : isSubRole
                             ? "bg-sky-100 text-sky-800 border-2 border-sky-400"
+                            : isGroupLead
+                            ? "bg-indigo-100 text-indigo-800 border-2 border-indigo-400"
                             : "bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border-2 border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400"
                         }`}
                         title="點擊放大查看大頭貼照片"
@@ -449,7 +493,7 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
                                 : "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30"
                             }`}>
                               <span>
-                                {isLeaderRole ? "👨‍🏫" : isSubRole ? "💼" : isGroupLead ? "🌟" : "👤"}
+                                {getRoleBadgeIcon(member.role)}
                               </span>
                               <span>
                                 {member.role === "講師" ? "授課導師" : member.role === "助教" ? "隨班助教" : member.role}
@@ -684,9 +728,10 @@ export function DirectoryView({ onOpenEditModal, onOpenOnboardingModal }: Direct
                       💼 隨班助教
                     </span>
                   )}
-                  {previewMember.role && previewMember.role !== "學員" && previewMember.role !== "講師" && previewMember.role !== "助教" && (
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
-                      {previewMember.role}
+                  {previewMember.role && previewMember.role !== "學員" && previewMember.role !== "一般學員" && previewMember.role !== "講師" && previewMember.role !== "助教" && (
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 flex items-center gap-1">
+                      <span>{getRoleBadgeIcon(previewMember.role)}</span>
+                      <span>{previewMember.role}</span>
                     </span>
                   )}
                 </div>

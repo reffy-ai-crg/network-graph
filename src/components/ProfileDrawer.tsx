@@ -393,7 +393,7 @@ export function ProfileDrawer({ onOpenEditModal }: ProfileDrawerProps) {
                     ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
                     : displayMember.role?.includes("助教") || displayMember.role?.includes("顧問")
                     ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40"
-                    : displayMember.role?.includes("組長") || displayMember.role?.includes("副組長") || displayMember.role?.includes("隊長") || displayMember.role?.includes("會長") || displayMember.role?.includes("幹部")
+                    : displayMember.role?.includes("組長") || displayMember.role?.includes("副組長") || displayMember.role?.includes("隊長") || displayMember.role?.includes("會長") || displayMember.role?.includes("幹部") || displayMember.role?.includes("社長") || displayMember.role?.includes("副社長") || displayMember.role?.includes("召集人")
                     ? "bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-500/40"
                     : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-500/30"
                 }`}>

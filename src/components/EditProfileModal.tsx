@@ -45,6 +45,8 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   // 所屬組別與班級身分
   const [group, setGroup] = useState<number>(currentUser.group || 9);
   const [role, setRole] = useState<string>(currentUser.role || "一般學員");
+  const [isCustomRole, setIsCustomRole] = useState<boolean>(false);
+  const [customRoleText, setCustomRoleText] = useState<string>("");
 
   const [offer, setOffer] = useState(currentUser.offer);
   const [seek, setSeek] = useState(currentUser.seek);
@@ -55,7 +57,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       : ["授課導師", "隨班助教", "組長幹部", "一般學員"];
     
     const list = [...defaultRoles];
-    if (role && !list.includes(role)) {
+    if (role && !list.includes(role) && role !== "__CUSTOM__") {
       list.push(role);
     }
     return list;
@@ -64,9 +66,11 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const getRoleOptionIcon = (roleName: string) => {
     if (roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者")) return "👨‍🏫 ";
     if (roleName.includes("助教")) return "💼 ";
-    if (roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") || roleName.includes("幹部")) return "🌟 ";
+    if (roleName.includes("社長") || roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") || roleName.includes("幹部") || roleName.includes("召集人")) return "🌟 ";
     if (roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") || roleName.includes("顧問")) return "👑 ";
-    if (roleName.includes("投資") || roleName.includes("創投") || roleName.includes("天使")) return "💎 ";
+    if (roleName.includes("投資") || roleName.includes("創投") || roleName.includes("天使") || roleName.includes("財務")) return "💎 ";
+    if (roleName.includes("秘書")) return "📝 ";
+    if (roleName.includes("社友") || roleName.includes("會員")) return "🤝 ";
     if (roleName.includes("參賽") || roleName.includes("黑客") || roleName.includes("選手")) return "🚀 ";
     return "👤 ";
   };
@@ -77,7 +81,18 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       setCompany(currentUser.company);
       setTitle(currentUser.title);
       setGroup(currentUser.group || 9);
-      setRole(currentUser.role || "學員");
+
+      const initialRole = currentUser.role || "一般學員";
+      if (availableRoles.includes(initialRole)) {
+        setRole(initialRole);
+        setIsCustomRole(false);
+        setCustomRoleText("");
+      } else {
+        setRole("__CUSTOM__");
+        setIsCustomRole(true);
+        setCustomRoleText(initialRole);
+      }
+
       setOffer(currentUser.offer);
       setSeek(currentUser.seek);
       setAvatarUrl(currentUser.avatarUrl || "");
@@ -131,13 +146,17 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
         ? (customIndustry.trim() || "其他多元領域")
         : selectedCategory;
 
+    const finalRole = isCustomRole
+      ? (customRoleText.trim() || "正式成員")
+      : (role.trim() || "一般學員");
+
     updateCurrentUserProfile({
       name: name.trim() || currentUser.name,
       surname: name.trim().slice(0, 1) || currentUser.surname,
       company: company.trim() || currentUser.company,
       title: title.trim() || currentUser.title,
       group: Number(group) || 1,
-      role: (role.trim() || "學員") as UserProfile["role"],
+      role: finalRole as UserProfile["role"],
       industry: finalIndustry,
       offer: offer.trim() || currentUser.offer,
       seek: seek.trim() || currentUser.seek,
@@ -336,8 +355,8 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             </div>
           </div>
 
-          {/* 所屬組別與班級身分設定 */}
-          <div className="grid grid-cols-2 gap-2.5 bg-slate-50/80 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80">
+          {/* 所屬組別與身分設定 */}
+          <div className="space-y-3 bg-slate-50/80 dark:bg-slate-950/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800/80">
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
                 所屬組別
@@ -347,7 +366,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 onChange={(e) => setGroup(Number(e.target.value))}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
               >
-                <option value={0}>🎓 巡迴指導（不限組別 / 導師助教）</option>
+                <option value={0}>🎓 巡迴指導 / 全體幹部（不限組別 / 導師助教）</option>
                 {Array.from({ length: 50 }, (_, i) => i + 1).map((g) => (
                   <option key={g} value={g}>
                     第 {g} 組 {g === 9 ? "🌟" : ""}
@@ -355,27 +374,84 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-                活動身分角色
-              </label>
-              <select
-                value={role}
-                onChange={(e) => {
-                  const newRole = e.target.value;
-                  setRole(newRole);
-                  if ((newRole.includes("導師") || newRole.includes("講師") || newRole.includes("助教")) && group > 0) {
-                    setGroup(0); // 自動切換為巡迴指導
-                  }
-                }}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
-              >
-                {availableRoles.map((r) => (
-                  <option key={r} value={r}>
-                    {getRoleOptionIcon(r)}{r}
-                  </option>
-                ))}
-              </select>
+
+            <div className="pt-0.5">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-medium text-xs">
+                  活動 / 社團身分角色
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomRole(!isCustomRole);
+                    if (!isCustomRole && !customRoleText) {
+                      setCustomRoleText(role !== "__CUSTOM__" ? role : "");
+                    }
+                  }}
+                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
+                >
+                  {isCustomRole ? "📋 從推薦名單選" : "✏️ 自行輸入角色"}
+                </button>
+              </div>
+
+              {!isCustomRole ? (
+                <div className="space-y-1">
+                  <select
+                    value={role}
+                    onChange={(e) => {
+                      const newRole = e.target.value;
+                      if (newRole === "__CUSTOM__") {
+                        setIsCustomRole(true);
+                        setCustomRoleText("");
+                      } else {
+                        setRole(newRole);
+                        if ((newRole.includes("導師") || newRole.includes("講師") || newRole.includes("助教")) && group > 0) {
+                          setGroup(0); // 自動切換為巡迴指導
+                        }
+                      }
+                    }}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  >
+                    {availableRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {getRoleOptionIcon(r)}{r}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__">✏️ 自行手動輸入（如：扶輪社社長、秘書、社友...）</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400">
+                    💡 若為扶輪社、商會、校友會等社團，可點「✏️ 自行輸入角色」手動輸入職稱
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  <input
+                    type="text"
+                    value={customRoleText}
+                    onChange={(e) => setCustomRoleText(e.target.value)}
+                    placeholder="例如：社長、前社長、秘書長、財務幹部、受邀貴賓..."
+                    className="w-full bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 transition text-xs"
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">常見身分快捷：</span>
+                    {["社長", "副社長", "秘書長", "財務幹部", "正式社友", "受邀貴賓", "組長幹部", "一般學員"].map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => setCustomRoleText(example)}
+                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition font-medium cursor-pointer ${
+                          customRoleText === example
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                            : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-emerald-400"
+                        }`}
+                      >
+                        + {example}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

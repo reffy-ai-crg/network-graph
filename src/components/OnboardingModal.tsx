@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { INDUSTRIES } from "../lib/mockData";
 import { IndustryType, UserProfile } from "../types/network";
@@ -13,7 +13,8 @@ import {
   Users, 
   CheckCircle2, 
   ArrowRight,
-  Camera
+  Shield,
+  Edit2
 } from "lucide-react";
 
 interface OnboardingModalProps {
@@ -31,9 +32,31 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   const [title, setTitle] = useState(isDefaultKevin ? "" : currentUser.title);
   const [group, setGroup] = useState<number>(9); // 預設推薦第 9 組
   const [role, setRole] = useState<string>("一般學員");
+  const [isCustomRole, setIsCustomRole] = useState<boolean>(false);
+  const [customRoleText, setCustomRoleText] = useState<string>("");
   const [industry, setIndustry] = useState<IndustryType>("數位行銷與媒體");
   const [offer, setOffer] = useState("");
   const [seek, setSeek] = useState("");
+
+  // 可用身分角色清單：優先使用房間設定的 customRoles，若無則提供常見預設
+  const availableRoomRoles = useMemo(() => {
+    if (currentEvent?.customRoles && currentEvent.customRoles.length > 0) {
+      return currentEvent.customRoles;
+    }
+    return ["一般學員", "組長幹部", "隨班助教", "授課導師"];
+  }, [currentEvent?.customRoles]);
+
+  const getRoleOptionIcon = (roleName: string) => {
+    if (roleName.includes("導師") || roleName.includes("講師") || roleName.includes("講者")) return "👨‍🏫 ";
+    if (roleName.includes("助教")) return "💼 ";
+    if (roleName.includes("社長") || roleName.includes("組長") || roleName.includes("隊長") || roleName.includes("會長") || roleName.includes("幹部") || roleName.includes("召集人")) return "🌟 ";
+    if (roleName.includes("評審") || roleName.includes("貴賓") || roleName.includes("VIP") || roleName.includes("顧問")) return "👑 ";
+    if (roleName.includes("投資") || roleName.includes("創投") || roleName.includes("天使") || roleName.includes("財務")) return "💎 ";
+    if (roleName.includes("秘書")) return "📝 ";
+    if (roleName.includes("社友") || roleName.includes("會員")) return "🤝 ";
+    if (roleName.includes("參賽") || roleName.includes("黑客") || roleName.includes("選手")) return "🚀 ";
+    return "👤 ";
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -42,12 +65,23 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       setCompany(isKevin ? "" : currentUser.company);
       setTitle(isKevin ? "" : currentUser.title);
       setGroup(currentUser.group || 9);
-      setRole(currentUser.role || "一般學員");
+
+      const initialRole = currentUser.role || availableRoomRoles[0] || "一般學員";
+      if (availableRoomRoles.includes(initialRole)) {
+        setRole(initialRole);
+        setIsCustomRole(false);
+        setCustomRoleText("");
+      } else {
+        setRole("__CUSTOM__");
+        setIsCustomRole(true);
+        setCustomRoleText(initialRole);
+      }
+
       if (currentUser.industry && INDUSTRIES.includes(currentUser.industry)) {
         setIndustry(currentUser.industry);
       }
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser, availableRoomRoles]);
 
   if (!isOpen) return null;
 
@@ -59,16 +93,20 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       return;
     }
 
+    const finalRole = isCustomRole
+      ? (customRoleText.trim() || "正式成員")
+      : (role.trim() || availableRoomRoles[0] || "一般學員");
+
     updateCurrentUserProfile({
       name: name.trim(),
       surname: name.trim().slice(0, 1),
       company: company.trim() || "自由專業人士",
       title: title.trim() || "學員",
       group: Number(group) || 9,
-      role: (role.trim() || "一般學員") as UserProfile["role"],
+      role: finalRole as UserProfile["role"],
       industry: industry,
-      offer: offer.trim() || "期待在課堂中交流與認識跨領域夥伴！",
-      seek: seek.trim() || "尋找各產業 AI 落地與跨界合作機會",
+      offer: offer.trim() || "期待在此場合交流與認識跨界夥伴！",
+      seek: seek.trim() || "尋找各產業合作與資源交流機會",
       avatarUrl: currentUser.avatarUrl,
       mediaType: "avatar",
     });
@@ -77,7 +115,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       sessionStorage.setItem("network_graph_onboarding_done", "true");
     }
 
-    showToast(`歡迎加入！您已成功就位【第 ${group} 組】🎉`);
+    showToast(`歡迎加入！您已成功就位【第 ${group} 組 · ${finalRole}】🎉`);
     onClose();
   };
 
@@ -94,13 +132,13 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           <div className="space-y-1 pr-2">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-700/60">
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>新同學報到就位</span>
+              <span>新夥伴報到就位</span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight">
               歡迎加入 {currentEvent?.title}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              只要 10 秒鐘填妥您的組別與名片，即可在全班關係圖譜中就位！
+              只要 10 秒鐘填妥您的組別與身分，即可在全體關係圖譜中就位！
             </p>
           </div>
           <button
@@ -174,7 +212,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
                   </option>
                 );
               })}
-              <option value={0}>🎓 巡迴指導（授課導師 / 隨班助教）</option>
+              <option value={0}>🎓 巡迴指導 / 全體幹部（不限單一組別）</option>
             </select>
           </div>
 
@@ -189,7 +227,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                placeholder="例如：富邦金控、台積電..."
+                placeholder="例如：台積電、富邦金控..."
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
               />
             </div>
@@ -209,10 +247,10 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           </div>
 
           {/* 產業與身分角色 */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="space-y-3 pt-0.5">
             <div>
               <label className="block text-slate-800 dark:text-slate-200 font-bold mb-1">
-                產業類別
+                產業領域分類
               </label>
               <select
                 value={industry}
@@ -226,20 +264,84 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-slate-800 dark:text-slate-200 font-bold mb-1">
-                班級身分
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition"
-              >
-                <option value="一般學員">👤 一般學員</option>
-                <option value="組長幹部">🌟 組長幹部</option>
-                <option value="隨班助教">💼 隨班助教</option>
-                <option value="授課導師">👨‍🏫 授課導師</option>
-              </select>
+
+            {/* 活動 / 社團身分角色（支援自訂輸入與常見社團熱門快捷） */}
+            <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>活動 / 社團身分角色</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomRole(!isCustomRole);
+                    if (!isCustomRole && !customRoleText) {
+                      setCustomRoleText(role !== "__CUSTOM__" ? role : "");
+                    }
+                  }}
+                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>{isCustomRole ? "📋 從推薦名單選" : "✏️ 自行手動輸入角色"}</span>
+                </button>
+              </div>
+
+              {!isCustomRole ? (
+                <div className="space-y-1">
+                  <select
+                    value={role}
+                    onChange={(e) => {
+                      if (e.target.value === "__CUSTOM__") {
+                        setIsCustomRole(true);
+                        setCustomRoleText("");
+                      } else {
+                        setRole(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  >
+                    {availableRoomRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {getRoleOptionIcon(r)}{r}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__">✏️ 自行手動輸入（如：扶輪社社長、秘書、社友...）</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400">
+                    💡 若為扶輪社、BNI、商會或自訂活動，可點選上方「✏️ 自行手動輸入角色」輸入專屬職稱
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 animate-in fade-in duration-200">
+                  <input
+                    type="text"
+                    value={customRoleText}
+                    onChange={(e) => setCustomRoleText(e.target.value)}
+                    placeholder="請輸入身分（例如：扶輪社社長、秘書長、財務幹部、受邀貴賓...）"
+                    className="w-full bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 transition text-xs"
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">常見身分快捷鍵：</span>
+                    {["社長", "副社長", "秘書長", "財務幹部", "正式社友", "受邀貴賓", "組長幹部", "一般學員"].map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => setCustomRoleText(example)}
+                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition font-medium cursor-pointer ${
+                          customRoleText === example
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                            : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-emerald-400"
+                        }`}
+                      >
+                        + {example}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -247,7 +349,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-sm font-extrabold shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-98"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-sm font-extrabold shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
             >
               <span>🚀 立即登記名片，進駐班級名冊</span>
               <ArrowRight className="w-4 h-4" />
