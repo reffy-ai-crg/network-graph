@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { UserProfile, EventSpace, ViewTab } from "../types/network";
 import { CURRENT_USER_DEFAULT, INITIAL_EVENTS, generateMockMembers } from "../lib/mockData";
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
@@ -23,6 +23,7 @@ export function getOrCreateUserUuid(): string {
 interface NetworkContextType {
   currentUser: UserProfile;
   events: EventSpace[];
+  myJoinedEvents: EventSpace[];
   currentEvent: EventSpace;
   members: UserProfile[];
   activeTab: ViewTab;
@@ -133,6 +134,46 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [themePreset, setThemePresetState] = useState<ThemePreset>("blue");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [adminPin, setAdminPinState] = useState("888888");
+
+  // 使用者參與過的活動 ID 清單（保障多租戶隔離，不展示全庫幾百個無關活動）
+  const [myJoinedEventIds, setMyJoinedEventIds] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("network_graph_my_joined_events");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return [];
+  });
+
+  // 自動將目前活動加入已參與清單
+  useEffect(() => {
+    if (currentEvent?.id || currentEvent?.slug) {
+      setMyJoinedEventIds((prev) => {
+        const identifiers = [currentEvent.id, currentEvent.slug].filter(Boolean);
+        const missing = identifiers.filter((id) => !prev.includes(id));
+        if (missing.length === 0) return prev;
+        const next = [...prev, ...missing];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("network_graph_my_joined_events", JSON.stringify(next));
+        }
+        return next;
+      });
+    }
+  }, [currentEvent]);
+
+  // 我參加過的活動（人脈存摺專用，嚴格隔離全庫幾百個未參加的活動）
+  const myJoinedEvents = useMemo(() => {
+    const list = events.filter(
+      (e) => myJoinedEventIds.includes(e.id) || myJoinedEventIds.includes(e.slug) || e.id === currentEvent.id || e.slug === currentEvent.slug
+    );
+    return list.length > 0 ? list : [currentEvent];
+  }, [events, myJoinedEventIds, currentEvent]);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -719,6 +760,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser,
         events,
+        myJoinedEvents,
         currentEvent,
         members,
         activeTab,

@@ -40,9 +40,7 @@ export function EventLandingView({
     currentUser, 
     setActiveTab, 
     showToast, 
-    openDrawer,
-    events,
-    switchEvent
+    openDrawer
   } = useNetwork();
 
   const isUserJoined = useMemo(() => {
@@ -342,37 +340,6 @@ export function EventLandingView({
         </div>
       </div>
 
-      {/* 底部探索其他活動房間 (活動大廳捷徑) */}
-      {events.length > 1 && (
-        <div className="bg-slate-100/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="space-y-0.5">
-            <span className="font-bold text-slate-900 dark:text-white">
-              🏢 切換其他活動房間（共 {events.length} 間活動）
-            </span>
-            <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-              您可以在不同的研修班、扶輪社或商會活動房之間快速切換
-            </p>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            {events.map((evt) => {
-              const isCurrent = evt.id === currentEvent.id || evt.slug === currentEvent.slug;
-              return (
-                <button
-                  key={evt.id}
-                  onClick={() => switchEvent(evt.id)}
-                  className={`px-3 py-1.5 rounded-xl font-semibold transition shrink-0 border text-xs cursor-pointer ${
-                    isCurrent
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500"
-                  }`}
-                >
-                  <span>{evt.title}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

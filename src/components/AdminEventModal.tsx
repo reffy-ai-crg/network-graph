@@ -14,11 +14,12 @@ import {
   Sparkles, 
   ShieldCheck, 
   Calendar, 
-  Lock,
-  KeyRound,
-  Layers,
-  ShieldAlert,
-  Crown
+  Lock, 
+  KeyRound, 
+  Layers, 
+  ShieldAlert, 
+  Crown,
+  Search
 } from "lucide-react";
 import { SCENARIO_TEMPLATES } from "../lib/mockData";
 
@@ -31,6 +32,7 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
   const { 
     currentEvent, 
     events, 
+    switchEvent,
     updateEventSettings, 
     createNewEvent, 
     toggleEventDemoMode, 
@@ -42,8 +44,20 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
     updateAdminPin
   } = useNetwork();
 
-  const [activeTab, setActiveTab] = useState<"edit" | "create" | "share" | "pin">("edit");
+  const [activeTab, setActiveTab] = useState<"rooms" | "edit" | "create" | "share" | "pin">("rooms");
   const [copied, setCopied] = useState(false);
+  const [roomSearch, setRoomSearch] = useState("");
+
+  const filteredEvents = React.useMemo(() => {
+    if (!roomSearch.trim()) return events;
+    const q = roomSearch.toLowerCase();
+    return events.filter(
+      (e) =>
+        e.title.toLowerCase().includes(q) ||
+        e.slug.toLowerCase().includes(q) ||
+        (e.cohort && e.cohort.toLowerCase().includes(q))
+    );
+  }, [events, roomSearch]);
 
   // 密鑰解鎖表單
   const [pinInput, setPinInput] = useState("");
@@ -259,6 +273,18 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
             {/* 分頁切換 Tab */}
             <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 px-4 text-xs font-medium overflow-x-auto no-scrollbar">
               <button
+                onClick={() => setActiveTab("rooms")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "rooms"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>房間總管 ({events.length})</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab("edit")}
                 className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === "edit"
@@ -309,6 +335,118 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
 
             {/* 內容區塊 */}
             <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 text-slate-800 dark:text-slate-200">
+              {/* TAB 0: 房間總管 (搜尋、切換、管理全庫活動) */}
+              {activeTab === "rooms" && (
+                <div className="space-y-4">
+                  {/* 搜尋與新增按鈕 */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={roomSearch}
+                        onChange={(e) => setRoomSearch(e.target.value)}
+                        placeholder="搜尋活動名稱、代碼 (Slug) 或期別..."
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("create")}
+                      className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1 shadow-xs"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>+ 開新房</span>
+                    </button>
+                  </div>
+
+                  {/* 房間清單 */}
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {filteredEvents.map((evt) => {
+                      const isCurrent = evt.id === currentEvent.id || evt.slug === currentEvent.slug;
+                      const roomInvite = `${liffBaseUrl}?event=${evt.slug}`;
+
+                      return (
+                        <div
+                          key={evt.id}
+                          className={`p-3 rounded-2xl border transition flex items-center justify-between gap-2.5 ${
+                            isCurrent
+                              ? "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-500/50 shadow-xs"
+                              : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                          }`}
+                        >
+                          <div className="truncate space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                                {evt.title}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                {evt.cohort}
+                              </span>
+                              {isCurrent && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-600 text-white font-medium">
+                                  目前檢視
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                              <span>網址代碼: ?event={evt.slug}</span>
+                              <span>•</span>
+                              <span>{evt.totalGroups > 1 ? `${evt.totalGroups} 個組別` : "不分組交流"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(roomInvite);
+                                showToast(`已複製「${evt.title}」專屬邀請網址！`);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                              title="複製專屬連結"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+
+                            {!isCurrent ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  switchEvent(evt.id);
+                                  showToast(`已切換至「${evt.title}」房間`);
+                                }}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-slate-800 dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition"
+                              >
+                                切換至此
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab("edit")}
+                                className="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-xs hover:bg-emerald-500 transition"
+                              >
+                                編輯設定
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {filteredEvents.length === 0 && (
+                      <div className="py-8 text-center text-slate-400 text-xs">
+                        查無符合「{roomSearch}」的活動房間
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                    <span>💡 全系統目前共維護 {events.length} 間專屬活動房</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">每間房享有獨立專屬名冊與權限</span>
+                  </div>
+                </div>
+              )}
+
               {/* TAB 1: 編輯當前活動 */}
               {activeTab === "edit" && (
                 <form onSubmit={handleSaveEdit} className="space-y-4">

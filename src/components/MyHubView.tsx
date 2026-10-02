@@ -12,14 +12,15 @@ interface MyHubViewProps {
 export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps) {
   const { 
     currentUser, 
-    events, 
+    myJoinedEvents, 
     currentEvent, 
     switchEvent, 
     privateNotes, 
     showToast,
     members,
     setActiveTab,
-    openDrawer
+    openDrawer,
+    isAdminUnlocked
   } = useNetwork();
 
   const totalNotesCount = Object.keys(privateNotes).length;
@@ -72,7 +73,7 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
         {/* 人脈存摺累計指標 */}
         <div className="grid grid-cols-3 gap-2.5 mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 text-center">
           <div className="p-3 rounded-2xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 shadow-xs">
-            <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">{events.length}</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">{myJoinedEvents.length}</div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">參加活動房</div>
           </div>
           <div className="p-3 rounded-2xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 shadow-xs">
@@ -120,25 +121,26 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
         </div>
       </div>
 
-      {/* 歷次活動人脈空間清單 */}
+      {/* 歷次活動人脈空間清單 (嚴格隔離僅限本人參與過的活動) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>我的活動人脈庫 (歷次認識時空情境)</span>
+            <span>我的活動人脈庫 (已加入 {myJoinedEvents.length} 場)</span>
           </h3>
-          <button
-            onClick={onOpenAdminModal}
-            className="text-xs text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium flex items-center gap-1 transition"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>發起新活動房</span>
-          </button>
+          {isAdminUnlocked && (
+            <button
+              onClick={onOpenAdminModal}
+              className="text-xs text-amber-600 hover:text-amber-500 dark:text-amber-400 font-medium flex items-center gap-1 transition"
+            >
+              <span>主辦後台管理 👑</span>
+            </button>
+          )}
         </div>
 
         <div className="space-y-2.5">
-          {events.map((evt) => {
-            const isCurrent = evt.id === currentEvent.id;
+          {myJoinedEvents.map((evt) => {
+            const isCurrent = evt.id === currentEvent.id || evt.slug === currentEvent.slug;
 
             return (
               <div
@@ -186,12 +188,18 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
                   }}
                   className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0"
                 >
-                  <span>查看全班名片 ({members.length}人)</span>
+                  <span>查看名片 ({members.length}人)</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             );
           })}
+
+          {myJoinedEvents.length === 1 && (
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center py-2">
+              ✨ 您已加入「{currentEvent.title}」。未來若使用本 LINE 帳號參與其他班級或社團，跨活動人脈將自動彙整於此。
+            </p>
+          )}
         </div>
       </div>
 
