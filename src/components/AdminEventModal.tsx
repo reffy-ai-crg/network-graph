@@ -19,7 +19,8 @@ import {
   Layers, 
   ShieldAlert, 
   Crown,
-  Search
+  Search,
+  Building2
 } from "lucide-react";
 import { SCENARIO_TEMPLATES } from "../lib/mockData";
 
@@ -41,12 +42,17 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
     isAdminUnlocked,
     unlockAdmin,
     adminPin,
-    updateAdminPin
+    updateAdminPin,
+    eventApplications,
+    approveEventApplication,
+    rejectEventApplication
   } = useNetwork();
 
-  const [activeTab, setActiveTab] = useState<"rooms" | "edit" | "create" | "share" | "pin">("rooms");
+  const [activeTab, setActiveTab] = useState<"applications" | "rooms" | "edit" | "create" | "share" | "pin">("rooms");
   const [copied, setCopied] = useState(false);
   const [roomSearch, setRoomSearch] = useState("");
+
+  const pendingAppsCount = eventApplications.filter((a) => a.status === "pending").length;
 
   const filteredEvents = React.useMemo(() => {
     if (!roomSearch.trim()) return events;
@@ -273,6 +279,23 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
             {/* 分頁切換 Tab */}
             <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 px-4 text-xs font-medium overflow-x-auto no-scrollbar">
               <button
+                onClick={() => setActiveTab("applications")}
+                className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === "applications"
+                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>開房審核</span>
+                {pendingAppsCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-bold animate-pulse">
+                    {pendingAppsCount}
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => setActiveTab("rooms")}
                 className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === "rooms"
@@ -335,6 +358,154 @@ export function AdminEventModal({ isOpen, onClose }: AdminEventModalProps) {
 
             {/* 內容區塊 */}
             <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 text-slate-800 dark:text-slate-200">
+              {/* TAB: 申請審核 (Applications) */}
+              {activeTab === "applications" && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        🏢 外部社團/企業開房預約審核中心
+                      </span>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        審核通過後將自動開通專屬活動房，並可一鍵複製專屬 LINE 交付文案傳送給主辦人。
+                      </p>
+                    </div>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-bold shrink-0 border border-amber-300 dark:border-amber-700/50">
+                      待審核：{pendingAppsCount} 筆
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {eventApplications.map((app) => {
+                      const isPending = app.status === "pending";
+                      const isApproved = app.status === "approved";
+
+                      return (
+                        <div
+                          key={app.id}
+                          className={`p-4 rounded-2xl border transition space-y-3 ${
+                            isPending
+                              ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/50 shadow-2xs"
+                              : isApproved
+                              ? "bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-600/40"
+                              : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900 dark:text-white text-sm">
+                                  {app.eventTitle}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                                  {app.orgName}
+                                </span>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                    isPending
+                                      ? "bg-amber-500 text-white"
+                                      : isApproved
+                                      ? "bg-emerald-600 text-white"
+                                      : "bg-slate-400 text-white"
+                                  }`}
+                                >
+                                  {isPending ? "⏳ 待審核" : isApproved ? "✅ 已核准開通" : "已駁回"}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <span>📅 預計日期：{app.eventDate}</span>
+                                <span>•</span>
+                                <span>👥 規模：{app.scale}</span>
+                                <span>•</span>
+                                <span>{app.needGrouping ? "🧩 需預先分組" : "🤝 自由交流（不分組）"}</span>
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-slate-400 shrink-0">
+                              {new Date(app.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          {/* 申請人資訊 */}
+                          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-700 dark:text-slate-300">
+                                申請代表：<strong>{app.applicantName}</strong> ({app.applicantRole})
+                              </span>
+                              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                🆔 LINE: {app.contactLine}
+                              </span>
+                            </div>
+                            {app.contactPhone && (
+                              <div className="text-slate-500">📞 電話：{app.contactPhone}</div>
+                            )}
+                            {app.notes && (
+                              <div className="text-slate-600 dark:text-slate-400 italic pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                                💬 備註：{app.notes}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 操作按鈕 */}
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            {isPending ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => rejectEventApplication(app.id)}
+                                  className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-rose-500 transition text-xs"
+                                >
+                                  駁回 / 暫緩
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await approveEventApplication(app.id);
+                                    if (res.success && res.inviteUrl) {
+                                      const lineReplyText = `親愛的 ${app.applicantName} (${app.applicantRole}) 您好！\n感謝您申請 NetworkGraph 專屬人脈活動房。\n\n您的「${app.eventTitle}」已審核通過並成功開通！\n\n📲 貴活動專屬 LINE 專用網址：\n${res.inviteUrl}\n\n祝 活動圓滿順利！`;
+                                      navigator.clipboard.writeText(lineReplyText);
+                                      showToast("活動房已建立！已自動複製【LINE開通通知文案】，可直接私訊回覆申請人 ✓");
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center gap-1.5"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>✅ 一鍵核准並自動開房</span>
+                                </button>
+                              </>
+                            ) : isApproved ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+                                  const matchingEvent = events.find(e => e.title === app.eventTitle || e.cohort === (app.cohort || app.orgName));
+                                  const slug = matchingEvent ? matchingEvent.slug : (app.cohort || app.orgName).toLowerCase().replace(/[^a-z0-9]/g, "-");
+                                  const url = `${liffBaseUrl}?event=${slug}`;
+                                  const lineReplyText = `親愛的 ${app.applicantName} 您好！\n您的「${app.eventTitle}」專屬活動房已開通完成！\n\n📲 活動專屬 LINE 連結：\n${url}\n\n歡迎轉發至大會或社團群組！`;
+                                  navigator.clipboard.writeText(lineReplyText);
+                                  showToast("已重新複製【LINE開通通知信】！可直接傳給主辦人 ✓");
+                                }}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium transition flex items-center gap-1"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>複製開通通知文字</span>
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {eventApplications.length === 0 && (
+                      <div className="py-10 text-center text-slate-400 text-xs">
+                        目前尚無外部社團開房申請
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* TAB 0: 房間總管 (搜尋、切換、管理全庫活動) */}
               {activeTab === "rooms" && (
                 <div className="space-y-4">

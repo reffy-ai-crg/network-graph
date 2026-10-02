@@ -12,6 +12,7 @@ import { EditProfileModal } from "../components/EditProfileModal";
 import { AdminEventModal } from "../components/AdminEventModal";
 import { OnboardingModal } from "../components/OnboardingModal";
 import { JoinEventModal } from "../components/JoinEventModal";
+import { ApplyEventModal } from "../components/ApplyEventModal";
 
 export default function Home() {
   const { activeTab, currentEvent, members } = useNetwork();
@@ -19,6 +20,7 @@ export default function Home() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   // 針對進入「純淨真實模式」房間的訪客：若尚未在名冊中就位且在目錄頁，自動平滑彈出新人迎賓就位卡
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function Home() {
         onOpenEditModal={() => setIsEditModalOpen(true)}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onOpenJoinModal={() => setIsJoinModalOpen(true)}
+        onOpenApplyModal={() => setIsApplyModalOpen(true)}
       />
 
       {/* 核心視圖切換 */}
@@ -53,6 +56,7 @@ export default function Home() {
             onOpenEditModal={() => setIsEditModalOpen(true)}
             onOpenAdminModal={() => setIsAdminModalOpen(true)}
             onOpenJoinModal={() => setIsJoinModalOpen(true)}
+            onOpenApplyModal={() => setIsApplyModalOpen(true)}
           />
         )}
         {activeTab === "directory" && (
@@ -67,6 +71,7 @@ export default function Home() {
             onOpenEditModal={() => setIsEditModalOpen(true)}
             onOpenAdminModal={() => setIsAdminModalOpen(true)}
             onOpenJoinModal={() => setIsJoinModalOpen(true)}
+            onOpenApplyModal={() => setIsApplyModalOpen(true)}
           />
         )}
       </div>
@@ -96,6 +101,13 @@ export default function Home() {
         isOpen={isJoinModalOpen}
         onClose={() => setIsJoinModalOpen(false)}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
+        onOpenApplyModal={() => setIsApplyModalOpen(true)}
+      />
+
+      {/* 企業/社團試辦開房預約申請彈窗 */}
+      <ApplyEventModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
       />
 
       {/* 活動主辦管理後台 (Admin Panel) */}

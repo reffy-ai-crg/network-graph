@@ -8,9 +8,10 @@ interface JoinEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenAdminModal?: () => void;
+  onOpenApplyModal?: () => void;
 }
 
-export function JoinEventModal({ isOpen, onClose, onOpenAdminModal }: JoinEventModalProps) {
+export function JoinEventModal({ isOpen, onClose, onOpenAdminModal, onOpenApplyModal }: JoinEventModalProps) {
   const { 
     currentEvent, 
     myJoinedEvents, 
@@ -200,10 +201,25 @@ export function JoinEventModal({ isOpen, onClose, onOpenAdminModal }: JoinEventM
                     onClose();
                     onOpenAdminModal();
                   }}
-                  className="text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-[11px] font-medium transition inline-flex items-center gap-1"
+                  className="text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-[11px] font-medium transition inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Lock className="w-3 h-3" />
                   <span>我是活動發起人？點此驗證並進入主辦後台</span>
+                </button>
+              </div>
+            )}
+
+            {onOpenApplyModal && (
+              <div className="text-center pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenApplyModal();
+                  }}
+                  className="text-emerald-600 dark:text-emerald-400 hover:underline text-[11px] font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span>🏢 想為自己的企業或社團開辦專屬房間？點此申請開通 ➔</span>
                 </button>
               </div>
             )}

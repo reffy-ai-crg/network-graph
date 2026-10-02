@@ -121,9 +121,42 @@ CREATE POLICY "Private notes strictly isolated to author update"
 ON public.private_notes FOR UPDATE
 USING (true);
 
+-- 6. 建立外部社團/企業活動開房預約申請表 (event_applications)
+CREATE TABLE IF NOT EXISTS public.event_applications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    org_name TEXT NOT NULL,
+    event_title TEXT NOT NULL,
+    cohort TEXT,
+    scale TEXT NOT NULL,
+    event_date TEXT NOT NULL,
+    need_grouping BOOLEAN DEFAULT true,
+    applicant_name TEXT NOT NULL,
+    applicant_role TEXT NOT NULL,
+    contact_line TEXT NOT NULL,
+    contact_phone TEXT,
+    notes TEXT,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.event_applications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can submit event applications"
+ON public.event_applications FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "Anyone can view event applications"
+ON public.event_applications FOR SELECT
+USING (true);
+
+CREATE POLICY "Anyone can update event applications"
+ON public.event_applications FOR UPDATE
+USING (true);
+
 -- ==============================================================================
 -- 預載預設活動種子資料 (AIA 經理人班第12期)
 -- ==============================================================================
 INSERT INTO public.events (slug, name, cohort, total_groups)
 VALUES ('aia-12', '台灣人工智慧學校 (AIA)', '經理人班第12期', 8)
 ON CONFLICT (slug) DO NOTHING;
+

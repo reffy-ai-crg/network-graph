@@ -29,13 +29,15 @@ interface EventLandingViewProps {
   onOpenEditModal: () => void;
   onOpenAdminModal?: () => void;
   onOpenJoinModal?: () => void;
+  onOpenApplyModal?: () => void;
 }
 
 export function EventLandingView({
   onOpenOnboardingModal,
   onOpenEditModal,
   onOpenAdminModal,
-  onOpenJoinModal
+  onOpenJoinModal,
+  onOpenApplyModal,
 }: EventLandingViewProps) {
   const { 
     currentEvent, 
@@ -366,6 +368,33 @@ export function EventLandingView({
           >
             <span>輸入活動代碼通關</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 底部企業/社團開房申請引導 (Inbound Lead Generation) */}
+      {onOpenApplyModal && (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 text-white p-5 sm:p-6 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+          <div className="relative z-10 space-y-1 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-semibold">
+              <Sparkles className="w-3 h-3 text-amber-300" />
+              <span>企業內訓 / EMBA 論壇 / 扶輪社 專屬空間</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold tracking-tight text-white">
+              想為您的活動建立專屬關係網絡圖譜？
+            </h3>
+            <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+              即刻申請試辦！支援客製化分組、LINE 免安裝報到、力導向產業網絡圖與私密備忘錄。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenApplyModal}
+            className="relative z-10 w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-98"
+          >
+            <span>🏢 立即申請開通</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       )}

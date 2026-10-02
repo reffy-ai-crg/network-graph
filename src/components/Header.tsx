@@ -8,9 +8,10 @@ interface HeaderProps {
   onOpenEditModal: () => void;
   onOpenAdminModal: () => void;
   onOpenJoinModal?: () => void;
+  onOpenApplyModal?: () => void;
 }
 
-export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }: HeaderProps) {
+export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal, onOpenApplyModal }: HeaderProps) {
   const { 
     currentEvent, 
     activeTab, 
@@ -115,6 +116,17 @@ export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }: H
               <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline">換房/代碼</span>
               <span className="sm:hidden">換房</span>
+            </button>
+          )}
+
+          {/* 企業/社團試辦預約開房按鈕 */}
+          {onOpenApplyModal && (
+            <button
+              onClick={onOpenApplyModal}
+              className="hidden lg:flex text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-600/40 px-2.5 py-1.5 rounded-full transition items-center gap-1 font-medium shadow-2xs cursor-pointer"
+              title="企業/社團申請專屬活動人脈空間"
+            >
+              <span>🏢 預約開房</span>
             </button>
           )}
 

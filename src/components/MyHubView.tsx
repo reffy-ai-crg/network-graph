@@ -8,9 +8,10 @@ interface MyHubViewProps {
   onOpenEditModal: () => void;
   onOpenAdminModal: () => void;
   onOpenJoinModal?: () => void;
+  onOpenApplyModal?: () => void;
 }
 
-export function MyHubView({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }: MyHubViewProps) {
+export function MyHubView({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal, onOpenApplyModal }: MyHubViewProps) {
   const { 
     currentUser, 
     myJoinedEvents, 
@@ -134,9 +135,19 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }
               <button
                 type="button"
                 onClick={onOpenJoinModal}
-                className="text-xs text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 font-semibold flex items-center gap-1 transition bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 px-2.5 py-1 rounded-xl"
+                className="text-xs text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 font-semibold flex items-center gap-1 transition bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 px-2.5 py-1 rounded-xl cursor-pointer"
               >
                 <span>+ 輸入代碼換房</span>
+              </button>
+            )}
+            {onOpenApplyModal && (
+              <button
+                type="button"
+                onClick={onOpenApplyModal}
+                className="text-xs text-slate-700 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 font-medium flex items-center gap-1 transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-xl cursor-pointer"
+                title="申請開通企業/社團活動房間"
+              >
+                <span>🏢 預約開房</span>
               </button>
             )}
             {isAdminUnlocked && (

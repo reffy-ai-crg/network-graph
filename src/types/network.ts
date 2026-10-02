@@ -62,3 +62,20 @@ export interface PrivateNote {
 }
 
 export type ViewTab = "landing" | "directory" | "graph" | "hub";
+
+export interface EventApplication {
+  id: string;
+  orgName: string;
+  eventTitle: string;
+  cohort?: string;
+  scale: string; // e.g. "30人以下", "30~80人", "80~200人", "200人以上"
+  eventDate: string;
+  needGrouping: boolean;
+  applicantName: string;
+  applicantRole: string; // e.g. "秘書長", "活動總召", "班代", "HR主管"
+  contactLine: string;
+  contactPhone?: string;
+  notes?: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+}

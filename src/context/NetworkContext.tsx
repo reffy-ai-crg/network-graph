@@ -1,13 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
-import { UserProfile, EventSpace, ViewTab } from "../types/network";
+import { UserProfile, EventSpace, ViewTab, EventApplication } from "../types/network";
 import { CURRENT_USER_DEFAULT, INITIAL_EVENTS, generateMockMembers } from "../lib/mockData";
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
 import { initLiff } from "../lib/liffClient";
 
 export function getOrCreateUserUuid(): string {
-  if (typeof window === "undefined") return "00000000-0000-0000-0000-000000000001";
+  if (typeof window !== "undefined") return "00000000-0000-0000-0000-000000000001";
   let uuid = localStorage.getItem("network_graph_user_uuid");
   if (!uuid) {
     uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -36,7 +36,7 @@ interface NetworkContextType {
   updateCurrentUserProfile: (profile: Partial<UserProfile>) => void;
   switchEvent: (eventId: string) => void;
   updateEventSettings: (eventId: string, updates: Partial<EventSpace>) => void;
-  createNewEvent: (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => void;
+  createNewEvent: (newEvent: Omit<EventSpace, "id" | "totalMembers" | "userRole" | "isCurrent">) => Promise<EventSpace | undefined>;
   toggleEventDemoMode: (eventId: string, isDemo: boolean) => void;
   refreshMembers: () => void;
   toastMessage: string | null;
@@ -52,6 +52,10 @@ interface NetworkContextType {
   adminPin: string;
   updateAdminPin: (newPin: string) => void;
   joinEventByCode: (code: string) => Promise<{ success: boolean; message: string }>;
+  eventApplications: EventApplication[];
+  submitEventApplication: (app: Omit<EventApplication, "id" | "status" | "createdAt">) => Promise<{ success: boolean; message: string }>;
+  approveEventApplication: (appId: string, customSlug?: string) => Promise<{ success: boolean; event?: EventSpace; inviteUrl?: string; message: string }>;
+  rejectEventApplication: (appId: string) => Promise<void>;
 }
 
 export type ThemePreset = "blue" | "green" | "purple" | "mono";
@@ -175,6 +179,39 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     );
     return list.length > 0 ? list : [currentEvent];
   }, [events, myJoinedEventIds, currentEvent]);
+
+  // 外部社團/企業預約開房申請清單 (審核制)
+  const [eventApplications, setEventApplications] = useState<EventApplication[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("network_graph_event_applications");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return [
+      {
+        id: "demo-app-1",
+        orgName: "台大 EMBA 114級管協",
+        eventTitle: "2026 數位創新交流論壇",
+        cohort: "EMBA 114級",
+        scale: "80~200人",
+        eventDate: "2026/05",
+        needGrouping: true,
+        applicantName: "王思涵",
+        applicantRole: "學術組召集人 / 班代",
+        contactLine: "shihan_emba",
+        contactPhone: "0912-345-678",
+        notes: "希望現場能配合大螢幕投影動態關係圖，讓大家在交流時間加深認識！",
+        status: "pending",
+        createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+      },
+    ];
+  });
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -411,6 +448,34 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
               mappedNotes[n.target_user_id] = n.note_content;
             });
             setPrivateNotes((prev) => ({ ...prev, ...mappedNotes }));
+          }
+
+          const { data: cloudApps, error: appErr } = await client
+            .from("event_applications")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (!appErr && cloudApps && cloudApps.length > 0) {
+            const mappedApps: EventApplication[] = cloudApps.map((a: any) => ({
+              id: a.id,
+              orgName: a.org_name,
+              eventTitle: a.event_title,
+              cohort: a.cohort,
+              scale: a.scale,
+              eventDate: a.event_date,
+              needGrouping: Boolean(a.need_grouping),
+              applicantName: a.applicant_name,
+              applicantRole: a.applicant_role,
+              contactLine: a.contact_line,
+              contactPhone: a.contact_phone,
+              notes: a.notes,
+              status: a.status || "pending",
+              createdAt: a.created_at,
+            }));
+            setEventApplications(mappedApps);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("network_graph_event_applications", JSON.stringify(mappedApps));
+            }
           }
         } catch (err) {
           console.warn("Supabase initial sync fallback:", err);
@@ -745,6 +810,141 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
     setActiveTab("directory");
     showToast(`新活動房「${newEvent.title}」建立成功！已啟用純淨真實模式。`);
+    return fullEvent;
+  };
+
+  // 提交外部社團/企業活動開房預約 (審核制)
+  const submitEventApplication = async (
+    appData: Omit<EventApplication, "id" | "status" | "createdAt">
+  ): Promise<{ success: boolean; message: string }> => {
+    const newApp: EventApplication = {
+      ...appData,
+      id: `app-${Date.now()}`,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    setEventApplications((prev) => {
+      const updated = [newApp, ...prev];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_event_applications", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from("event_applications").insert({
+          org_name: appData.orgName,
+          event_title: appData.eventTitle,
+          cohort: appData.cohort,
+          scale: appData.scale,
+          event_date: appData.eventDate,
+          need_grouping: appData.needGrouping,
+          applicant_name: appData.applicantName,
+          applicant_role: appData.applicantRole,
+          contact_line: appData.contactLine,
+          contact_phone: appData.contactPhone,
+          notes: appData.notes,
+          status: "pending",
+        });
+      } catch (err) {
+        console.warn("Supabase insert application notice:", err);
+      }
+    }
+
+    showToast("🎉 活動開辦預約已成功送出！專案特助將於24小時內聯繫。");
+    return { success: true, message: "申請已成功送出！" };
+  };
+
+  // 審核通過並一鍵開房 (Admin)
+  const approveEventApplication = async (
+    appId: string,
+    customSlug?: string
+  ): Promise<{ success: boolean; event?: EventSpace; inviteUrl?: string; message: string }> => {
+    const app = eventApplications.find((a) => a.id === appId);
+    if (!app) return { success: false, message: "找不到該筆申請資料" };
+
+    // 生成乾淨 slug 代碼
+    let baseSlug = customSlug || app.cohort || app.orgName;
+    baseSlug = baseSlug
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (!baseSlug || baseSlug.length < 2) {
+      baseSlug = `club-${Date.now().toString().slice(-4)}`;
+    }
+
+    // 檢查 slug 唯一性
+    let finalSlug = baseSlug;
+    let counter = 1;
+    while (events.some((e) => e.slug === finalSlug)) {
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // 自動建房
+    const created = await createNewEvent({
+      title: app.eventTitle,
+      cohort: app.cohort || app.orgName,
+      slug: finalSlug,
+      totalGroups: app.needGrouping ? 6 : 0,
+      date: app.eventDate || new Date().toISOString().slice(0, 7).replace("-", "/"),
+      passcode: "",
+      isDemoMode: false,
+      customRoles: ["授課導師", "隨班助教", "組長幹部", "一般學員"],
+    });
+
+    // 更新狀態為 approved
+    setEventApplications((prev) => {
+      const updated = prev.map((a) => (a.id === appId ? { ...a, status: "approved" as const } : a));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_event_applications", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from("event_applications")
+          .update({ status: "approved" })
+          .eq("id", appId);
+      } catch (err) {
+        console.warn("Supabase update application status notice:", err);
+      }
+    }
+
+    const liffBaseUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID || "2011804167-FfkxQ4P2"}`;
+    const inviteUrl = `${liffBaseUrl}?event=${finalSlug}`;
+
+    showToast(`✅ 已成功核准並建立「${app.eventTitle}」專屬活動房！`);
+    return { success: true, event: created || undefined, inviteUrl, message: "活動房已建立！" };
+  };
+
+  // 標記駁回 / 暫緩
+  const rejectEventApplication = async (appId: string) => {
+    setEventApplications((prev) => {
+      const updated = prev.map((a) => (a.id === appId ? { ...a, status: "rejected" as const } : a));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("network_graph_event_applications", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from("event_applications")
+          .update({ status: "rejected" })
+          .eq("id", appId);
+      } catch (err) {
+        console.warn("Supabase reject application notice:", err);
+      }
+    }
+
+    showToast("已更新該筆申請狀態！");
   };
 
   // 切換示範名冊與真實名冊模式
@@ -853,6 +1053,10 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         adminPin,
         updateAdminPin,
         joinEventByCode,
+        eventApplications,
+        submitEventApplication,
+        approveEventApplication,
+        rejectEventApplication,
       }}
     >
       {children}
