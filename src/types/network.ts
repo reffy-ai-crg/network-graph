@@ -61,4 +61,4 @@ export interface PrivateNote {
   updatedAt: string;
 }
 
-export type ViewTab = "directory" | "graph" | "hub";
+export type ViewTab = "landing" | "directory" | "graph" | "hub";

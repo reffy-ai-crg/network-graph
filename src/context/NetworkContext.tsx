@@ -115,8 +115,17 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [members, setMembers] = useState<UserProfile[]>([]);
-  const [activeTab, setActiveTab] = useState<ViewTab>("directory");
   const [selectedMember, setSelectedMember] = useState<UserProfile | null>(null);
+  const [activeTab, setActiveTab] = useState<ViewTab>(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      if (tabParam === "directory" || tabParam === "graph" || tabParam === "hub") {
+        return tabParam;
+      }
+    }
+    return "landing";
+  });
   const [privateNotes, setPrivateNotes] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);

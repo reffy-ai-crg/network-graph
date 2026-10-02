@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useNetwork } from "../context/NetworkContext";
-import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, ChevronDown, PlusCircle } from "lucide-react";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, ChevronDown, PlusCircle, Home } from "lucide-react";
 
 interface HeaderProps {
   onOpenEditModal: () => void;
@@ -203,6 +203,18 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
       {/* 視圖切換導覽列 */}
       <div className="px-3 py-1.5 flex items-center justify-between gap-2 bg-slate-50/90 dark:bg-slate-900/60 border-t border-slate-100 dark:border-transparent">
         <div className="flex items-center space-x-1 bg-slate-200/70 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+          <button
+            onClick={() => setActiveTab("landing")}
+            className={`px-3 py-1 rounded-lg transition font-medium flex items-center gap-1.5 ${
+              activeTab === "landing"
+                ? "bg-emerald-600 text-white shadow-xs font-semibold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+            }`}
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>活動首頁</span>
+          </button>
+
           <button
             onClick={() => setActiveTab("directory")}
             className={`px-3 py-1 rounded-lg transition font-medium flex items-center gap-1.5 ${

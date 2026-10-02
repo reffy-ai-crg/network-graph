@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useNetwork } from "../context/NetworkContext";
 import { Header } from "../components/Header";
+import { EventLandingView } from "../components/EventLandingView";
 import { DirectoryView } from "../components/DirectoryView";
 import { GraphView } from "../components/GraphView";
 import { MyHubView } from "../components/MyHubView";
@@ -17,9 +18,9 @@ export default function Home() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
-  // 針對進入「純淨真實模式」房間的訪客：若尚未在名冊中就位，自動平滑彈出新人迎賓就位卡
+  // 針對進入「純淨真實模式」房間的訪客：若尚未在名冊中就位且在目錄頁，自動平滑彈出新人迎賓就位卡
   useEffect(() => {
-    if (currentEvent.isDemoMode === false) {
+    if (currentEvent.isDemoMode === false && activeTab === "directory") {
       const isUserJoined = members.some((m) => m.isCurrentUser);
       const isDismissed = typeof window !== "undefined" && sessionStorage.getItem("network_graph_onboarding_dismissed");
       
@@ -31,7 +32,7 @@ export default function Home() {
         return () => clearTimeout(timer);
       }
     }
-  }, [currentEvent.isDemoMode, currentEvent.id, members]);
+  }, [currentEvent.isDemoMode, currentEvent.id, members, activeTab]);
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--theme-page-bg,#f8fafc)] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
@@ -43,6 +44,13 @@ export default function Home() {
 
       {/* 核心視圖切換 */}
       <div className="flex-1 flex flex-col">
+        {activeTab === "landing" && (
+          <EventLandingView 
+            onOpenOnboardingModal={() => setIsOnboardingOpen(true)}
+            onOpenEditModal={() => setIsEditModalOpen(true)}
+            onOpenAdminModal={() => setIsAdminModalOpen(true)}
+          />
+        )}
         {activeTab === "directory" && (
           <DirectoryView 
             onOpenEditModal={() => setIsEditModalOpen(true)}
