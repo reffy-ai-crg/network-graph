@@ -19,7 +19,8 @@ import {
   Calendar,
   ChevronRight,
   ExternalLink,
-  Edit3
+  Edit3,
+  KeyRound
 } from "lucide-react";
 import { INDUSTRIES } from "../lib/mockData";
 
@@ -27,12 +28,14 @@ interface EventLandingViewProps {
   onOpenOnboardingModal: () => void;
   onOpenEditModal: () => void;
   onOpenAdminModal?: () => void;
+  onOpenJoinModal?: () => void;
 }
 
 export function EventLandingView({
   onOpenOnboardingModal,
   onOpenEditModal,
-  onOpenAdminModal
+  onOpenAdminModal,
+  onOpenJoinModal
 }: EventLandingViewProps) {
   const { 
     currentEvent, 
@@ -340,6 +343,32 @@ export function EventLandingView({
         </div>
       </div>
 
+      {/* 底部代碼換房與跨活動入口 */}
+      {onOpenJoinModal && (
+        <div className="bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <KeyRound className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-900 dark:text-white block">
+                參加了其他活動？輸入專屬代碼快速換房
+              </span>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                持有其他主辦單位提供的專屬代碼（如：the-rotary、aia-12），即可快速跨房參與
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenJoinModal}
+            className="w-full sm:w-auto px-4 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold transition shrink-0 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <span>輸入活動代碼通關</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

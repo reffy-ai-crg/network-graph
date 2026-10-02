@@ -51,6 +51,7 @@ interface NetworkContextType {
   unlockAdmin: (pin: string) => boolean;
   adminPin: string;
   updateAdminPin: (newPin: string) => void;
+  joinEventByCode: (code: string) => Promise<{ success: boolean; message: string }>;
 }
 
 export type ThemePreset = "blue" | "green" | "purple" | "mono";
@@ -573,6 +574,69 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 透過活動代碼通關換房 (Slido / Kahoot 模式)
+  const joinEventByCode = async (code: string): Promise<{ success: boolean; message: string }> => {
+    const cleanCode = code.trim().toLowerCase();
+    if (!cleanCode) {
+      return { success: false, message: "請輸入活動代碼" };
+    }
+
+    // 1. 先查記憶體/本地快取中是否有此活動
+    let found = events.find(
+      (e) => e.slug.toLowerCase() === cleanCode || e.id.toLowerCase() === cleanCode
+    );
+
+    // 2. 若沒找到且已連線 Supabase，嘗試從雲端資料庫精準檢索
+    if (!found && isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .or(`slug.ilike.${cleanCode},id.eq.${cleanCode}`)
+          .maybeSingle();
+
+        if (!error && data) {
+          found = {
+            id: data.id,
+            slug: data.slug,
+            title: data.name,
+            cohort: data.cohort,
+            date: data.event_date || "2026/03",
+            totalMembers: 1,
+            totalGroups: typeof data.total_groups === "number" ? data.total_groups : 10,
+            userRole: "學員",
+            isCurrent: true,
+            passcode: data.passcode || "",
+            isDemoMode: false,
+            customRoles: ["授課導師", "隨班助教", "組長幹部", "一般學員"],
+          };
+          setEvents((prev) => [...prev.filter((e) => e.id !== found!.id), found!]);
+        }
+      } catch (err) {
+        console.warn("Query event by code error:", err);
+      }
+    }
+
+    if (found) {
+      switchEvent(found.id);
+      // 確保將此活動加入本地已參與清單
+      setMyJoinedEventIds((prev) => {
+        const ids = [found!.id, found!.slug];
+        const next = Array.from(new Set([...prev, ...ids]));
+        if (typeof window !== "undefined") {
+          localStorage.setItem("network_graph_my_joined_events", JSON.stringify(next));
+        }
+        return next;
+      });
+      return { success: true, message: `成功進入「${found.title}」！` };
+    }
+
+    return {
+      success: false,
+      message: `找不到代碼為「${cleanCode}」的活動房，請確認代碼是否輸入正確。`,
+    };
+  };
+
   // 修改活動設定 (Admin)
   const updateEventSettings = (eventId: string, updates: Partial<EventSpace>) => {
     setEvents((prev) => {
@@ -788,6 +852,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         unlockAdmin,
         adminPin,
         updateAdminPin,
+        joinEventByCode,
       }}
     >
       {children}

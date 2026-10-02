@@ -7,9 +7,10 @@ import { User, Edit3, ArrowRight, PlusCircle, CheckCircle2, StickyNote, Users, G
 interface MyHubViewProps {
   onOpenEditModal: () => void;
   onOpenAdminModal: () => void;
+  onOpenJoinModal?: () => void;
 }
 
-export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps) {
+export function MyHubView({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }: MyHubViewProps) {
   const { 
     currentUser, 
     myJoinedEvents, 
@@ -128,14 +129,25 @@ export function MyHubView({ onOpenEditModal, onOpenAdminModal }: MyHubViewProps)
             <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>我的活動人脈庫 (已加入 {myJoinedEvents.length} 場)</span>
           </h3>
-          {isAdminUnlocked && (
-            <button
-              onClick={onOpenAdminModal}
-              className="text-xs text-amber-600 hover:text-amber-500 dark:text-amber-400 font-medium flex items-center gap-1 transition"
-            >
-              <span>主辦後台管理 👑</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onOpenJoinModal && (
+              <button
+                type="button"
+                onClick={onOpenJoinModal}
+                className="text-xs text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 font-semibold flex items-center gap-1 transition bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 px-2.5 py-1 rounded-xl"
+              >
+                <span>+ 輸入代碼換房</span>
+              </button>
+            )}
+            {isAdminUnlocked && (
+              <button
+                onClick={onOpenAdminModal}
+                className="text-xs text-amber-600 hover:text-amber-500 dark:text-amber-400 font-medium flex items-center gap-1 transition"
+              >
+                <span>主辦後台 👑</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2.5">

@@ -2,14 +2,15 @@
 
 import React from "react";
 import { useNetwork } from "../context/NetworkContext";
-import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, Home } from "lucide-react";
+import { Users, Grid, Sparkles, BookOpen, User, Briefcase, Share2, Settings, Sun, Moon, Home, KeyRound } from "lucide-react";
 
 interface HeaderProps {
   onOpenEditModal: () => void;
   onOpenAdminModal: () => void;
+  onOpenJoinModal?: () => void;
 }
 
-export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
+export function Header({ onOpenEditModal, onOpenAdminModal, onOpenJoinModal }: HeaderProps) {
   const { 
     currentEvent, 
     activeTab, 
@@ -103,6 +104,19 @@ export function Header({ onOpenEditModal, onOpenAdminModal }: HeaderProps) {
             <Share2 className="w-3.5 h-3.5" />
             <span>分享到 LINE</span>
           </button>
+
+          {/* 加入/換房按鈕 (代碼快速通關) */}
+          {onOpenJoinModal && (
+            <button
+              onClick={onOpenJoinModal}
+              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-full transition flex items-center gap-1 shadow-2xs font-medium cursor-pointer"
+              title="輸入代碼加入其他活動或切換房間"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">換房/代碼</span>
+              <span className="sm:hidden">換房</span>
+            </button>
+          )}
 
           {/* 我的名片 */}
           <button
